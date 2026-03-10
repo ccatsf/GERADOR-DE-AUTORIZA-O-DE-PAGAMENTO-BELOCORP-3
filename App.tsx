@@ -164,26 +164,25 @@ const App: React.FC = () => {
     }
   };
 
-  const fetchHistory = async (uid: string) => {
-    setIsHistoryLoading(true);
+function fetchHistory() {
     try {
-      const q = query(
-        collection(db, 'authorizations'),
-        where('uid', '==', uid),
-        orderBy('updatedAt', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      const docs = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setSavedAuthorizations(docs);
+        // Fetch data from Firebase
+        const historyData = fetchDataFromFirebase(); // Replace with actual fetch code
+
+        // Process Firebase timestamps
+        historyData.forEach(item => {
+            if (item.timestamp) {
+                item.timestamp = item.timestamp.toDate(); // Convert Firebase timestamp to JS date
+            }
+        });
+
+        return historyData;
     } catch (error) {
-      console.error("Erro ao buscar histórico:", error);
-    } finally {
-      setIsHistoryLoading(false);
+        // Improved error logging
+        console.error('Error fetching history:', error);
+        throw new Error('Failed to fetch history');
     }
-  };
+}
 
   const handleSave = async () => {
   if (!user) {
