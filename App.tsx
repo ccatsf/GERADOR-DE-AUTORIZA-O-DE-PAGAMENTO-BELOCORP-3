@@ -19,7 +19,7 @@ import {
   updateDoc, 
   deleteDoc,
   getDocFromServer
-} from 'firebase.ts/firestore';
+} from 'firebase/firestore';
 
 // Declarando html2pdf para o TypeScript
 declare var html2pdf: any;
