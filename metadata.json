@@ -1,0 +1,5 @@
+{
+  "name": "Gerador de Autorização de Pagamento",
+  "description": "Uma ferramenta profissional para preenchimento e geração de PDFs de autorização de pagamento com layout preservado e preenchimento inteligente via IA.",
+  "requestFramePermissions": []
+}

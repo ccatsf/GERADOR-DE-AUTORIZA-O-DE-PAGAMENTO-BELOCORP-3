@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "Beneficiary": {
+      "title": "Beneficiary",
+      "description": "Information about a payment beneficiary",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "pix": { "type": "string" },
+        "document": { "type": "string" },
+        "type": { "type": "string" },
+        "bank": { "type": "string" },
+        "agency": { "type": "string" },
+        "account": { "type": "string" },
+        "amount": { "type": "string" }
+      },
+      "required": ["id", "name", "amount"]
+    },
+    "PaymentAuthorization": {
+      "title": "Payment Authorization",
+      "description": "A complete payment authorization document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner user ID" },
+        "clientName": { "type": "string" },
+        "clientCpf": { "type": "string" },
+        "contractNumber": { "type": "string" },
+        "totalAmount": { "type": "string" },
+        "isContractAdditive": { "type": "string", "enum": ["sim", "nao", ""] },
+        "needsGuarantor": { "type": "string", "enum": ["sim", "nao", ""] },
+        "doctorName": { "type": "string" },
+        "paymentAmount": { "type": "string" },
+        "beneficiaries": {
+          "type": "array",
+          "items": { "$ref": "Beneficiary" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "clientName", "beneficiaries"]
+    }
+  },
+  "firestore": {
+    "/authorizations/{authId}": {
+      "schema": "PaymentAuthorization",
+      "description": "Collection of saved payment authorizations"
+    }
+  }
+}

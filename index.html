@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gerador de Autorização de Pagamento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            animation: {
+              fadeIn: 'fadeIn 0.3s ease-out',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+            },
+          },
+        },
+      }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Biblioteca para geração de PDF direto no cliente -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      
+      * {
+        box-sizing: border-box;
+      }
+
+      @media print {
+        body { 
+          margin: 0; 
+          background: white !important; 
+        }
+        .no-print { display: none !important; }
+        .a4-preview-wrapper {
+          padding: 0 !important;
+          margin: 0 !important;
+          background: none !important;
+          display: block !important;
+        }
+        .a4-page-shadow {
+          box-shadow: none !important;
+          margin: 0 !important;
+          width: 210mm !important;
+          min-height: 297mm !important;
+        }
+      }
+      
+      /* Estilos para visualização em tela */
+      .a4-preview-wrapper {
+        background-color: #525659;
+      }
+      .dark .a4-preview-wrapper {
+        background-color: #18181b;
+      }
+      .a4-preview-wrapper {
+        padding: 40px 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .a4-page-shadow {
+        width: 210mm;
+        height: 297mm;
+        background: white;
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        position: relative;
+        /* Removido overflow hidden para evitar cortes na visualização caso exceda */
+      }
+
+      .avoid-break {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .loading-overlay {
+        animation: fadeIn 0.3s ease-out;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+    </style>
+    <script type="importmap">
+    {
+      "imports": {
+        "react/": "https://esm.sh/react@^19.2.4/",
+        "react": "https://esm.sh/react@^19.2.4",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+        "@google/genai": "https://esm.sh/@google/genai@^1.40.0"
+      }
+    }
+    </script>
+    <script>
+      // Initialize theme before content loads to prevent flicker
+      if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
+  </head>
+  <body class="bg-gray-50 dark:bg-zinc-900 min-h-screen transition-colors duration-300">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
