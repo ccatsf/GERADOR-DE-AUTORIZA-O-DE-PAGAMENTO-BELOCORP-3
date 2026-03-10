@@ -234,9 +234,7 @@ function fetchHistory() {
 
 const fetchHistory = async (uid: string) => {
   setIsHistoryLoading(true);
-  try {
-    console.log("🔍 Buscando documentos para UID:", uid);
-    
+  try {    
     const q = query(
       collection(db, 'authorizations'),
       where('uid', '==', uid),
@@ -244,11 +242,9 @@ const fetchHistory = async (uid: string) => {
     );
     
     const querySnapshot = await getDocs(q);
-    console.log("📊 Total de documentos encontrados:", querySnapshot.size);
     
     const docs = querySnapshot.docs.map(doc => {
       const data = doc.data();
-      console.log("📄 Documento:", {
         id: doc.id,
         clientName: data.clientName,
         uid: data.uid,
@@ -261,7 +257,6 @@ const fetchHistory = async (uid: string) => {
     });
     
     setSavedAuthorizations(docs);
-    console.log("✅ Estado atualizado com", docs.length, "documentos");
   } catch (error) {
     console.error("❌ ERRO ao buscar histórico:", error);
     if (error instanceof Error) {
