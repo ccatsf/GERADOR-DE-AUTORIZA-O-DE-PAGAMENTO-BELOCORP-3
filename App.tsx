@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
-import { parsePaymentText } from './services/geminiService';
+import { parsePaymentText } from './services/geminiService.ts';
 import PaymentForm from './components/PaymentForm';
 import DocumentPreview from './components/DocumentPreview';
 import { maskCurrency, parseCurrency } from './src/utils/formatters';
