@@ -4,9 +4,9 @@ import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
 import { parsePaymentText } from './services/geminiService.ts';
 import PaymentForm from './PaymentForm.tsx';
 import DocumentPreview from './DocumentPreview.tsx';
-import { maskCurrency, parseCurrency } from './src/utils/formatters';
-import { auth, db, googleProvider } from './src/firebase';
-import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { maskCurrency, parseCurrency } from './formatters.ts';
+import { auth, db, googleProvider } from './firebase.ts';
+import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase.ts/auth';
 import { 
   collection, 
   addDoc, 
@@ -19,7 +19,7 @@ import {
   updateDoc, 
   deleteDoc,
   getDocFromServer
-} from 'firebase/firestore';
+} from 'firebase.ts/firestore';
 
 // Declarando html2pdf para o TypeScript
 declare var html2pdf: any;
