@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { PaymentAuthData, Beneficiary } from '../types';
-import { maskCurrency, maskCpfCnpj, maskCPF } from '../src/utils/formatters';
+import { maskCurrency, maskCpfCnpj, maskCPF } from './formatters';
 
 interface Props {
   data: PaymentAuthData;
