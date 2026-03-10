@@ -178,18 +178,18 @@ const App: React.FC = () => {
       console.log("📊 Total de documentos encontrados:", querySnapshot.size);
       
       const docs = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        console.log("📄 Documento:", {
-          id: doc.id,
-          clientName: data.clientName,
-          uid: data.uid,
-          updatedAt: data.updatedAt
-        });
-        return {
-          id: doc.id,
-          ...data
-        };
-      });
+  const data = doc.data();
+  console.log("📄 Documento:", {
+    id: doc.id,
+    clientName: data.clientName,
+    uid: data.uid,
+    updatedAt: data.updatedAt
+  });
+  return {
+    id: doc.id,
+    ...data
+  };
+});
       
       setSavedAuthorizations(docs);
       console.log("✅ Estado atualizado com", docs.length, "documentos");
