@@ -186,51 +186,92 @@ const App: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!user) {
-      alert("Você precisa estar logado para salvar.");
-      return;
-    }
+  if (!user) {
+    alert("Você precisa estar logado para salvar.");
+    return;
+  }
 
-    if (!data.clientName.trim()) {
-      alert("O nome do cliente é obrigatório para salvar.");
-      return;
-    }
+  if (!data.clientName.trim()) {
+    alert("O nome do cliente é obrigatório para salvar.");
+    return;
+  }
 
-    setIsSaving(true);
-    try {
-      const payload = {
-        ...data,
-        uid: user.uid,
-        updatedAt: serverTimestamp()
+  setIsSaving(true);
+  try {
+    const payload = {
+      ...data,
+      uid: user.uid,
+      updatedAt: serverTimestamp()
+    };
+
+    console.log("📝 Tentando salvar com payload:", payload);
+    console.log("👤 User ID:", user.uid);
+
+    if (currentDocId) {
+      await updateDoc(doc(db, 'authorizations', currentDocId), payload);
+      console.log("✅ Documento atualizado:", currentDocId);
+    } else {
+      const docRef = await addDoc(collection(db, 'authorizations'), {
+        ...payload,
+        createdAt: serverTimestamp()
+      });
+      console.log("✅ Novo documento criado:", docRef.id);
+      setCurrentDocId(docRef.id);
+    }
+    
+    await fetchHistory(user.uid);
+    alert("Documento salvo com sucesso!");
+  } catch (error) {
+    console.error("❌ ERRO COMPLETO ao salvar:", error);
+    if (error instanceof Error) {
+      console.error("Mensagem:", error.message);
+      console.error("Code:", (error as any).code);
+    }
+    alert(`Erro ao salvar o documento: ${error instanceof Error ? error.message : 'Desconhecido'}`);
+  } finally {
+    setIsSaving(false);
+  }
+};
+
+const fetchHistory = async (uid: string) => {
+  setIsHistoryLoading(true);
+  try {
+    console.log("🔍 Buscando documentos para UID:", uid);
+    
+    const q = query(
+      collection(db, 'authorizations'),
+      where('uid', '==', uid),
+      orderBy('updatedAt', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    console.log("📊 Total de documentos encontrados:", querySnapshot.size);
+    
+    const docs = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log("📄 Documento:", {
+        id: doc.id,
+        clientName: data.clientName,
+        uid: data.uid,
+        updatedAt: data.updatedAt
+      });
+      return {
+        id: doc.id,
+        ...data
       };
-
-      if (currentDocId) {
-        await updateDoc(doc(db, 'authorizations', currentDocId), payload);
-      } else {
-        const docRef = await addDoc(collection(db, 'authorizations'), {
-          ...payload,
-          createdAt: serverTimestamp()
-        });
-        setCurrentDocId(docRef.id);
-      }
-      
-      await fetchHistory(user.uid);
-      alert("Documento salvo com sucesso!");
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar o documento.");
-    } finally {
-      setIsSaving(false);
+    });
+    
+    setSavedAuthorizations(docs);
+    console.log("✅ Estado atualizado com", docs.length, "documentos");
+  } catch (error) {
+    console.error("❌ ERRO ao buscar histórico:", error);
+    if (error instanceof Error) {
+      console.error("Mensagem:", error.message);
     }
-  };
-
-  const handleLoadDoc = (savedDoc: any) => {
-    const { id, uid, createdAt, updatedAt, ...docData } = savedDoc;
-    setData(docData);
-    setCurrentDocId(id);
-    setShowHistory(false);
-    setShowPreview(false);
-  };
+  } finally {
+    setIsHistoryLoading(false);
+  }
+};
 
   const handleDeleteDoc = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
