@@ -2,8 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
 import { parsePaymentText } from './services/geminiService.ts';
-import PaymentForm from '.PaymentForm.tsx';
-import DocumentPreview from '.DocumentPreview.tsx';
+import PaymentForm from './PaymentForm.tsx';
+import DocumentPreview from './DocumentPreview.tsx';
 import { maskCurrency, parseCurrency } from './src/utils/formatters';
 import { auth, db, googleProvider } from './src/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
