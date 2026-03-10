@@ -1,6 +1,6 @@
 
 import { initializeApp } from 'firebase.ts/app';
-import { getAuth, GoogleAuthProvider } from 'firebase.ts/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase.ts/firestore.rules';
 import firebaseConfig from '../firebase-applet-config.json';
 
