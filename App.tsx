@@ -6,7 +6,7 @@ import PaymentForm from './PaymentForm.tsx';
 import DocumentPreview from './DocumentPreview.tsx';
 import { maskCurrency, parseCurrency } from './formatters.ts';
 import { auth, db, googleProvider } from './firebase.ts';
-import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase.ts/auth';
+import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { 
   collection, 
   addDoc, 
