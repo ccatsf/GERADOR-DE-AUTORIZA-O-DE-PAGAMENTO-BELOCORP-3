@@ -202,8 +202,7 @@ const App: React.FC = () => {
       setIsHistoryLoading(false);
     }
   };
-   const clientOptions = {
-   apiKey: 'AIzaSyAdhuuXoaco2QAO-fk0DfLlbZaWGcNy0_M',
+  
    const handleSave = async () => {
     if (!user) {
       alert("Você precisa estar logado para salvar.");
