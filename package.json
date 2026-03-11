@@ -1,5 +1,5 @@
 {
-  "name": "gerador-de-autorização-de-pagamento",
+  "name": "gerador-de-autorizacao-de-pagamento",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -14,12 +14,12 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "@react-oauth/google": "^0.12.1",
-    "google-auth-library": "^9.6.3",
+    "google-auth-library": "^9.6.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
+    "@vitejs/plugin-react": "^6.0.0",
+    "typescript": "^5.8.2",
     "vite": "^6.2.0"
   }
 }
