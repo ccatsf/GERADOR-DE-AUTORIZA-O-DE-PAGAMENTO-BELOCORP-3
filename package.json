@@ -12,7 +12,7 @@
     "@google/genai": "^1.40.0",
     "firebase": "^12.10.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
     "@react-oauth/google": "^0.12.1",
     "google-auth-library": "^9.6.3",
   },
