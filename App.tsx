@@ -364,6 +364,20 @@ const App: React.FC = () => {
     setIsPdfLoading(false);
   }
 };
+  
+  {showPreview && (
+  <>
+    {/* Botões existentes de download... */}
+    <button
+      onClick={() => handleSaveToDrive('autorizacao-documento', 'Autorização')}
+      disabled={isPdfLoading}
+      className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2"
+    >
+      <i className="fab fa-google"></i>
+      <span>Salvar no Google Drive</span>
+    </button>
+  </>
+)}
 
   return (
     <div className="min-h-screen pb-20 bg-gray-100 dark:bg-zinc-900 transition-colors duration-300">
