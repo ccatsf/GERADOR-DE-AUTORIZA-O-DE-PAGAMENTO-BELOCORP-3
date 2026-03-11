@@ -346,11 +346,10 @@ const App: React.FC = () => {
 
     // Criar pasta no Google Drive
     const folderName = `Autorização_${data.clientName}_${new Date().toISOString().split('T')[0]}`;
-    const folderId = await createFolderInDrive(folderName);
-
+    const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
     // Upload do PDF
     await uploadFileToDrive(
-      `${fileName}_${data.clientName}.pdf`,
+      `${NUVEM}_${data.clientName}.pdf`,
       new Blob([canvas], { type: 'application/pdf' }),
       folderId
     );
