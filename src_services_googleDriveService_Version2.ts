@@ -1,3 +1,4 @@
+console.log("Teste de Chave:", import.meta.env.VITE_GEMINI_API_KEY ? "OK" : "VAZIA");
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from './firebase';
 
