@@ -224,6 +224,7 @@ const App: React.FC = () => {
 
       console.log("📝 Tentando salvar com payload:", payload);
       console.log("👤 User ID:", user.uid);
+      console.log("DEBUG: Tentando enviar para o Drive agora...");
 
       if (currentDocId) {
         await updateDoc(doc(db, 'authorizations', currentDocId), payload);
