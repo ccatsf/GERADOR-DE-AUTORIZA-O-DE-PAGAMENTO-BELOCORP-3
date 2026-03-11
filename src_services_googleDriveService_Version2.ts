@@ -1,5 +1,5 @@
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from './firebase'; // Importe corrigido para a mesma pasta
+import { auth } from './firebase';
 
 const GOOGLE_DRIVE_API_KEY = import.meta.env.VITE_GOOGLE_DRIVE_API_KEY;
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -16,18 +16,15 @@ export const uploadFileToDrive = async (
   folderId?: string
 ): Promise<string> => {
   try {
-    // 1. Configurar o Provedor do Google com permissão para o Drive
     const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/drive.file'); // Escopo necessário para salvar arquivos
+    provider.addScope('https://www.googleapis.com/auth/drive.file');
 
-    // 2. Abrir o popup de login para pegar o Token de Acesso (AccessToken)
     const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
-    const token = credential?.accessToken; // Este é o token que o Drive aceita
+    const token = credential?.accessToken;
 
     if (!token) throw new Error("Não foi possível obter o token de acesso do Google.");
 
-    // 3. Configurar metadados do arquivo
     const metadata: DriveFile = {
       name: fileName,
       mimeType: fileContent.type || 'application/pdf',
@@ -41,13 +38,12 @@ export const uploadFileToDrive = async (
     );
     formData.append('file', fileContent);
 
-    // 4. Enviar para o Google Drive
     const response = await fetch(
       'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}` // Usando o AccessToken aqui
+          Authorization: `Bearer ${token}`
         },
         body: formData
       }
@@ -69,7 +65,6 @@ export const uploadFileToDrive = async (
 
 export const createFolderInDrive = async (folderName: string): Promise<string> => {
   try {
-    // Repetir o processo de login para garantir que temos o token para criar a pasta
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/drive.file');
     
@@ -103,10 +98,6 @@ export const createFolderInDrive = async (folderName: string): Promise<string> =
     const data = await response.json();
     return data.id;
   } catch (error) {
-    console.error("❌ Erro ao criar pasta:", error);
-    throw error;
-  }
-};
     console.error("❌ Erro ao criar pasta:", error);
     throw error;
   }
