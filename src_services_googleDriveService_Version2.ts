@@ -1,6 +1,5 @@
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '../firebase';
-
+import { auth } from './firebase';
 const GOOGLE_DRIVE_API_KEY = import.meta.env.VITE_GOOGLE_DRIVE_API_KEY;
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
