@@ -1,3 +1,4 @@
+import { uploadFileToDrive, createFolderInDrive } from './services/googleDriveService';
 import React, { useState, useRef, useEffect } from 'react';
 import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
 import { parsePaymentText } from './services/geminiService.ts';
@@ -328,6 +329,41 @@ const App: React.FC = () => {
       setIsPdfLoading(false);
     }
   };
+  const handleSaveToDrive = async (elementId: string, fileName: string) => {
+  try {
+    setIsPdfLoading(true);
+    
+    // Gerar PDF
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const canvas = await html2pdf().set({
+      margin: 0,
+      filename: fileName,
+      image: { type: 'jpeg', quality: 1.0 },
+      html2canvas: { scale: 3, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).from(element).outputPdf('blob');
+
+    // Criar pasta no Google Drive
+    const folderName = `Autorização_${data.clientName}_${new Date().toISOString().split('T')[0]}`;
+    const folderId = await createFolderInDrive(folderName);
+
+    // Upload do PDF
+    await uploadFileToDrive(
+      `${fileName}_${data.clientName}.pdf`,
+      new Blob([canvas], { type: 'application/pdf' }),
+      folderId
+    );
+
+    alert("✅ Documento salvo no Google Drive com sucesso!");
+  } catch (error) {
+    console.error("❌ Erro:", error);
+    alert("Erro ao salvar no Google Drive");
+  } finally {
+    setIsPdfLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen pb-20 bg-gray-100 dark:bg-zinc-900 transition-colors duration-300">
