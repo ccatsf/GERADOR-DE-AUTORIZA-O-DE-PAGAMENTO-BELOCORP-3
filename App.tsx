@@ -1,4 +1,4 @@
-import { uploadFileToDrive, createFolderInDrive } from './services/googleDriveService';
+import { uploadFileToDrive, createFolderInDrive } from '.src_services_googleDriveService_Version2.ts';
 import React, { useState, useRef, useEffect } from 'react';
 import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
 import { parsePaymentText } from './services/geminiService.ts';
