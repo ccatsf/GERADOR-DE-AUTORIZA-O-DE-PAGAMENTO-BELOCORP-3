@@ -17,13 +17,13 @@ export const uploadFileToDrive = async (
 ): Promise<string> => {
   try {
     const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/drive.file');
+provider.addScope('https://www.googleapis.com/auth/drive.file');
 
-    const result = await signInWithPopup(auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    const token = credential?.accessToken;
+   const result = await signInWithPopup(auth, provider);
+const credential = GoogleAuthProvider.credentialFromResult(result);
+const token = credential?.accessToken; // Este é o token que o Drive entende
 
-    if (!token) throw new Error("Não foi possível obter o token de acesso do Google.");
+if (!token) throw new Error("Não foi possível obter o acesso ao Google Drive.");
 
     const metadata: DriveFile = {
       name: fileName,
