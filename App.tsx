@@ -137,6 +137,17 @@ const App: React.FC = () => {
     
     setIsSaving(true);
     try {
+      // 0. Tenta obter o token do Google logo no início para evitar bloqueio de pop-up
+      const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/drive.file');
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const googleToken = credential?.accessToken;
+
+      if (!googleToken) {
+        throw new Error("Não foi possível obter acesso ao Google Drive. Verifique se as janelas pop-up estão liberadas.");
+      }
+
       const payload = { ...data, uid: user.uid, updatedAt: serverTimestamp() };
 
       // 1. Salva no Firebase (Histórico)
@@ -159,11 +170,23 @@ const App: React.FC = () => {
 
         const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
         
-        await uploadFileToDrive(
-          `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
-          pdfBlob,
-          folderId
-        );
+        try {
+          await uploadFileToDrive(
+            `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
+            pdfBlob,
+            folderId,
+            googleToken
+          );
+        } catch (driveError: any) {
+          console.warn("Falha ao salvar na pasta específica, tentando na raiz:", driveError);
+          // Tenta salvar na raiz se a pasta falhar
+          await uploadFileToDrive(
+            `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
+            pdfBlob,
+            undefined,
+            googleToken
+          );
+        }
         alert("✅ Salvo no sistema e enviado ao Google Drive!");
       } else {
         // Se o elemento não for encontrado, ele salva apenas no sistema
@@ -171,9 +194,9 @@ const App: React.FC = () => {
       }
 
       await fetchHistory(user.uid);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no Drive:", error);
-      alert("Erro ao salvar. Verifique a conexão com o Google.");
+      alert(`Erro ao salvar: ${error.message || "Verifique a conexão com o Google."}`);
     } finally {
       setIsSaving(false);
     }
@@ -313,3 +336,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
