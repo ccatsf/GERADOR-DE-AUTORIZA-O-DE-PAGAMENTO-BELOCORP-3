@@ -1,7 +1,9 @@
 
-import React from 'react';
-import { PaymentAuthData, Beneficiary } from '../types';
+import React, { useState, useEffect } from 'react';
+import { PaymentAuthData, Beneficiary } from './types';
 import { maskCurrency, maskCpfCnpj, maskCPF } from './formatters';
+import { db } from './firebase';
+import { collection, query, limit, getDocs, orderBy, startAt, endAt } from 'firebase/firestore';
 
 interface Props {
   data: PaymentAuthData;
@@ -20,6 +22,36 @@ const PaymentForm: React.FC<Props> = ({
   onRemoveBeneficiary,
   onUpdateBeneficiary,
 }) => {
+  const [directory, setDirectory] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState<string | null>(null);
+
+  // Carregar diretório de beneficiários (apenas os 20 mais recentes para performance inicial)
+  useEffect(() => {
+    const fetchDirectory = async () => {
+      try {
+        const q = query(collection(db, 'beneficiaries_directory'), orderBy('updatedAt', 'desc'), limit(20));
+        const snapshot = await getDocs(q);
+        setDirectory(snapshot.docs.map(doc => doc.data()));
+      } catch (err) {
+        console.warn("Erro ao carregar diretório:", err);
+      }
+    };
+    fetchDirectory();
+  }, []);
+
+  const handleSelectBeneficiary = (id: string, b: any) => {
+    onUpdateBeneficiary(id, {
+      name: b.name,
+      pix: b.pix || '',
+      document: b.document || '',
+      type: b.type || '',
+      bank: b.bank || '',
+      agency: b.agency || '',
+      account: b.account || '',
+    });
+    setShowSuggestions(null);
+  };
+
   if (activeTab === 'cover') {
     return (
       <section className="bg-white dark:bg-zinc-800 p-8 rounded-b-xl rounded-tr-xl shadow-sm border border-gray-100 dark:border-zinc-700 animate-fadeIn">
@@ -160,14 +192,53 @@ const PaymentForm: React.FC<Props> = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 relative">
                   <label className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase">Nome / Favorecido</label>
                   <input
                     type="text"
                     value={b.name}
-                    onChange={(e) => onUpdateBeneficiary(b.id, { name: e.target.value })}
+                    onChange={(e) => {
+                      onUpdateBeneficiary(b.id, { name: e.target.value });
+                      setShowSuggestions(b.id);
+                    }}
+                    onFocus={() => setShowSuggestions(b.id)}
+                    onBlur={() => {
+                      // Pequeno delay para permitir o clique nas sugestões
+                      setTimeout(() => setShowSuggestions(null), 200);
+                    }}
                     className="w-full p-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded outline-none text-sm dark:text-zinc-200"
                   />
+                  {showSuggestions === b.id && b.name.length >= 2 && (
+                    <div className="absolute z-20 w-full mt-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-xl max-h-60 overflow-y-auto overflow-x-hidden">
+                      <div className="p-2 text-[10px] font-bold text-gray-400 border-b dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50">
+                        SUGESTÕES DO DIRETÓRIO
+                      </div>
+                      {directory
+                        .filter(item => item.name.toLowerCase().includes(b.name.toLowerCase()))
+                        .map((item, idx) => (
+                          <div
+                            key={idx}
+                            onMouseDown={(e) => {
+                              e.preventDefault(); // Impede o onBlur de fechar antes do clique
+                              handleSelectBeneficiary(b.id, item);
+                            }}
+                            className="p-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 cursor-pointer border-b last:border-0 dark:border-zinc-700 transition-colors"
+                          >
+                            <div className="font-bold text-sm dark:text-zinc-200">{item.name}</div>
+                            <div className="text-[10px] text-gray-500 flex items-center gap-2 mt-1">
+                              <span className="bg-gray-100 dark:bg-zinc-700 px-1.5 py-0.5 rounded">{item.bank || 'S/ Banco'}</span>
+                              <span>•</span>
+                              <span>{item.document}</span>
+                            </div>
+                          </div>
+                        ))}
+                      {directory.filter(item => item.name.toLowerCase().includes(b.name.toLowerCase())).length === 0 && (
+                        <div className="p-4 text-xs text-gray-400 italic text-center">
+                          Nenhum beneficiário salvo com este nome
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase">PIX</label>
@@ -245,3 +316,4 @@ const PaymentForm: React.FC<Props> = ({
 };
 
 export default PaymentForm;
+
