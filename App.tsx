@@ -1,4 +1,5 @@
-import { uploadFileToDrive } from './src_services_googleDriveService_Version2';import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
+import { uploadFileToDrive } from './src_services_googleDriveService_Version2';import React, { useState, useRef, useEffect } from 'react';
+import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
 import { parsePaymentText } from './services/geminiService.ts';
 import PaymentForm from './PaymentForm.tsx';
 import DocumentPreview from './DocumentPreview.tsx';
@@ -328,65 +329,55 @@ const App: React.FC = () => {
       setIsPdfLoading(false);
     }
   };
- const handleSaveToDrive = async (elementId: string) => {
+  const handleSaveToDrive = async (elementId: string, fileName: string) => {
   try {
     setIsPdfLoading(true);
+    
+    // Gerar PDF
     const element = document.getElementById(elementId);
     if (!element) return;
 
-    const pdfBlob = await html2pdf().set({
+    const canvas = await html2pdf().set({
       margin: 0,
-      filename: `Autorizacao_${data.clientName}.pdf`,
+      filename: fileName,
       image: { type: 'jpeg', quality: 1.0 },
       html2canvas: { scale: 3, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     }).from(element).outputPdf('blob');
 
+    // Criar pasta no Google Drive
+    const folderName = `Autorização_${data.clientName}_${new Date().toISOString().split('T')[0]}`;
     const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
-    
+    // Upload do PDF
     await uploadFileToDrive(
-      `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
-      pdfBlob,
+      `${NUVEM}_${data.clientName}.pdf`,
+      new Blob([canvas], { type: 'application/pdf' }),
       folderId
     );
 
     alert("✅ Documento salvo no Google Drive com sucesso!");
   } catch (error) {
-    alert("Erro ao salvar no Drive.");
+    console.error("❌ Erro:", error);
+    alert("Erro ao salvar no Google Drive");
   } finally {
     setIsPdfLoading(false);
   }
 };
-{showPreview && (
-  <div className="flex flex-wrap gap-2 mt-4 no-print">
+  
+  {showPreview && (
+  <>
+    {/* Botões existentes de download... */}
     <button
-      onClick={() => handleDownloadPdf('capa-documento', 'Capa')}
+      onClick={() => handleSaveToDrive('autorizacao-documento', 'Autorização')}
       disabled={isPdfLoading}
-      className={`bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2 ${isPdfLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+      className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2"
     >
-      <i className="fas fa-file-download"></i>
-      <span>Baixar Capa</span>
+      <i className="fab fa-google"></i>
+      <span>Salvar no Google Drive</span>
     </button>
-
-    <button
-      onClick={() => handleDownloadPdf('autorizacao-documento', 'Autorizacao')}
-      disabled={isPdfLoading}
-      className={`bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2 ${isPdfLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-    >
-      <i className="fas fa-file-invoice"></i>
-      <span>Baixar Autorização</span>
-    </button>
-
- <button
-  onClick={() => handleSaveToDrive('autorizacao-documento')}
-  disabled={isPdfLoading}
-  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2"
->
-  <i className="fab fa-google"></i>
-  <span>{isPdfLoading ? 'Salvando...' : 'Salvar no Drive'}</span>
-</button>
-  </div>
+  </>
 )}
+
   return (
     <div className="min-h-screen pb-20 bg-gray-100 dark:bg-zinc-900 transition-colors duration-300">
       <nav className="bg-indigo-700 dark:bg-indigo-900 text-white shadow-lg p-4 sticky top-0 z-50 no-print">
