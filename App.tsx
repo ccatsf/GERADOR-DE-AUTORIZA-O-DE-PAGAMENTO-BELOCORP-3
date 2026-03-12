@@ -221,36 +221,47 @@ const App: React.FC = () => {
         updatedAt: serverTimestamp()
       };
 
-      console.log("📝 Tentando salvar com payload:", payload);
-      console.log("👤 User ID:", user.uid);
-      console.log("DEBUG: Tentando enviar para o Drive agora...");
-
+      // 1. Salva no banco de dados
       if (currentDocId) {
         await updateDoc(doc(db, 'authorizations', currentDocId), payload);
-        console.log("✅ Documento atualizado:", currentDocId);
+        console.log("✅ Documento atualizado");
       } else {
         const docRef = await addDoc(collection(db, 'authorizations'), {
           ...payload,
           createdAt: serverTimestamp()
         });
-        console.log("✅ Novo documento criado:", docRef.id);
         setCurrentDocId(docRef.id);
+        console.log("✅ Novo documento criado");
       }
       
-      await fetchHistory(user.uid);
-      alert("Documento salvo com sucesso!");
-    } catch (error) {
-      console.error("❌ ERRO COMPLETO ao salvar:", error);
-      if (error instanceof Error) {
-        console.error("Mensagem:", error.message);
-        console.error("Code:", (error as any).code);
+      // 2. ENVIO PARA O DRIVE
+      const element = document.getElementById('autorizacao-documento');
+      if (element) {
+        const pdfBlob = await html2pdf().set({
+          margin: 0,
+          filename: `Autorizacao_${data.clientName}.pdf`,
+          html2canvas: { scale: 3, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }).from(element).outputPdf('blob');
+
+        const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
+        
+        await uploadFileToDrive(
+          `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
+          pdfBlob,
+          folderId
+        );
       }
-      alert(`Erro ao salvar o documento: ${error instanceof Error ? error.message : 'Desconhecido'}`);
+
+      await fetchHistory(user.uid);
+      alert("✅ Salvo no sistema e no Google Drive com sucesso!");
+    } catch (error) {
+      console.error("❌ Erro ao salvar:", error);
+      alert("Erro ao realizar o salvamento completo.");
     } finally {
       setIsSaving(false);
     }
-  };
-
+     
   const handleLoadDoc = (savedDoc: any) => {
     const { id, uid, createdAt, updatedAt, ...docData } = savedDoc;
     setData(docData);
@@ -328,76 +339,6 @@ const App: React.FC = () => {
       setIsPdfLoading(false);
     }
   };
-const handleSave = async () => {
-    if (!user) {
-      alert("Por favor, faça login para salvar.");
-      return;
-    }
-
-    if (!data.clientName.trim()) {
-      alert("Por favor, preencha o nome do cliente.");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      // Salva no Firebase (Seu sistema atual)
-      const payload = {
-        ...data,
-        uid: user.uid,
-        updatedAt: serverTimestamp(),
-      };
-
-      if (currentDocId) {
-        await updateDoc(doc(db, 'authorizations', currentDocId), payload);
-      } else {
-        const docRef = await addDoc(collection(db, 'authorizations'), {
-          ...payload,
-          createdAt: serverTimestamp(),
-        });
-        setCurrentDocId(docRef.id);
-      }
-
-      const element = document.getElementById('autorizacao-documento');
-      if (element) {
-        const pdfBlob = await html2pdf().set({
-          margin: 0,
-          filename: `Autorizacao_${data.clientName}.pdf`,
-          html2canvas: { scale: 3, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        }).from(element).outputPdf('blob');
-
-        const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
-        await uploadFileToDrive(
-      `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
-      new Blob([canvas], { type: 'application/pdf' }),
-      folderId
-        );
-      }
-
-      await fetchHistory(user.uid);
-      alert("✅ Salvo no sistema e no Google Drive com sucesso!");
-      await handleSaveToDrive('autorizacao-documento', 'Autorização');
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-      alert("Erro ao realizar o salvamento completo.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-  {showPreview && (
-  <>
-    {/* Botões existentes de download... */}
-    <button
-      onClick={() => handleSaveToDrive('autorizacao-documento', 'Autorização')}
-      disabled={isPdfLoading}
-      className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2"
-    >
-      <i className="fab fa-google"></i>
-      <span>Salvar no Google Drive</span>
-    </button>
-  </>
-)}
 
   return (
     <div className="min-h-screen pb-20 bg-gray-100 dark:bg-zinc-900 transition-colors duration-300">
