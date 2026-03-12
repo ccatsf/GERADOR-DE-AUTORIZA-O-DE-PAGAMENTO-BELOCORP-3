@@ -1,5 +1,4 @@
-import { uploadFileToDrive } from './src_services_googleDriveService_Version2';import React, { useState, useRef, useEffect } from 'react';
-import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
+import { uploadFileToDrive } from './src_services_googleDriveService_Version2';import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
 import { parsePaymentText } from './services/geminiService.ts';
 import PaymentForm from './PaymentForm.tsx';
 import DocumentPreview from './DocumentPreview.tsx';
@@ -350,7 +349,7 @@ const App: React.FC = () => {
     const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
     // Upload do PDF
     await uploadFileToDrive(
-      `${NUVEM}_${data.clientName}.pdf`,
+      `${1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X}_${data.clientName}.pdf`,
       new Blob([canvas], { type: 'application/pdf' }),
       folderId
     );
@@ -363,21 +362,36 @@ const App: React.FC = () => {
     setIsPdfLoading(false);
   }
 };
-  
-  {showPreview && (
-  <>
-    {/* Botões existentes de download... */}
+{showPreview && (
+  <div className="flex flex-wrap gap-2 mt-4 no-print">
     <button
-      onClick={() => handleSaveToDrive('autorizacao-documento', 'Autorização')}
+      onClick={() => handleDownloadPdf('capa-documento', 'Capa')}
+      disabled={isPdfLoading}
+      className={`bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2 ${isPdfLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+    >
+      <i className="fas fa-file-download"></i>
+      <span>Baixar Capa</span>
+    </button>
+
+    <button
+      onClick={() => handleDownloadPdf('autorizacao-documento', 'Autorizacao')}
+      disabled={isPdfLoading}
+      className={`bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2 ${isPdfLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+    >
+      <i className="fas fa-file-invoice"></i>
+      <span>Baixar Autorização</span>
+    </button>
+
+    <button
+      onClick={() => handleSaveToDrive('autorizacao-documento', 'Autorizacao')}
       disabled={isPdfLoading}
       className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2"
     >
       <i className="fab fa-google"></i>
-      <span>Salvar no Google Drive</span>
+      <span>{isPdfLoading ? 'Salvando...' : 'Salvar no Google Drive'}</span>
     </button>
-  </>
+  </div>
 )}
-
   return (
     <div className="min-h-screen pb-20 bg-gray-100 dark:bg-zinc-900 transition-colors duration-300">
       <nav className="bg-indigo-700 dark:bg-indigo-900 text-white shadow-lg p-4 sticky top-0 z-50 no-print">
