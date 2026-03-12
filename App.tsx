@@ -328,29 +328,27 @@ const App: React.FC = () => {
       setIsPdfLoading(false);
     }
   };
-  const handleSaveToDrive = async (elementId: string, fileName: string) => {
+  const handleSaveToDrive = async (elementId: string) => {
   try {
     setIsPdfLoading(true);
-    
-    // Gerar PDF
     const element = document.getElementById(elementId);
     if (!element) return;
 
-    const canvas = await html2pdf().set({
+    // Gerar o PDF como Blob
+    const pdfBlob = await html2pdf().set({
       margin: 0,
-      filename: fileName,
+      filename: `Autorizacao_${data.clientName}.pdf`,
       image: { type: 'jpeg', quality: 1.0 },
       html2canvas: { scale: 3, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     }).from(element).outputPdf('blob');
 
-    // Criar pasta no Google Drive
-    const folderName = `Autorização_${data.clientName}_${new Date().toISOString().split('T')[0]}`;
     const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
-    // Upload do PDF
+    
+    // Upload direto para o Drive
     await uploadFileToDrive(
-      `${1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X}_${data.clientName}.pdf`,
-      new Blob([canvas], { type: 'application/pdf' }),
+      `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
+      pdfBlob,
       folderId
     );
 
