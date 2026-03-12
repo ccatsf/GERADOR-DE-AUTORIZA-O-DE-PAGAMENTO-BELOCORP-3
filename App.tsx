@@ -328,13 +328,12 @@ const App: React.FC = () => {
       setIsPdfLoading(false);
     }
   };
-  const handleSaveToDrive = async (elementId: string) => {
+ const handleSaveToDrive = async (elementId: string) => {
   try {
     setIsPdfLoading(true);
     const element = document.getElementById(elementId);
     if (!element) return;
 
-    // Gerar o PDF como Blob
     const pdfBlob = await html2pdf().set({
       margin: 0,
       filename: `Autorizacao_${data.clientName}.pdf`,
@@ -345,7 +344,6 @@ const App: React.FC = () => {
 
     const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
     
-    // Upload direto para o Drive
     await uploadFileToDrive(
       `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
       pdfBlob,
@@ -354,8 +352,7 @@ const App: React.FC = () => {
 
     alert("✅ Documento salvo no Google Drive com sucesso!");
   } catch (error) {
-    console.error("❌ Erro:", error);
-    alert("Erro ao salvar no Google Drive");
+    alert("Erro ao salvar no Drive.");
   } finally {
     setIsPdfLoading(false);
   }
@@ -380,14 +377,14 @@ const App: React.FC = () => {
       <span>Baixar Autorização</span>
     </button>
 
-    <button
-      onClick={() => handleSaveToDrive('autorizacao-documento', 'Autorizacao')}
-      disabled={isPdfLoading}
-      className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2"
-    >
-      <i className="fab fa-google"></i>
-      <span>{isPdfLoading ? 'Salvando...' : 'Salvar no Google Drive'}</span>
-    </button>
+ <button
+  onClick={() => handleSaveToDrive('autorizacao-documento')}
+  disabled={isPdfLoading}
+  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2"
+>
+  <i className="fab fa-google"></i>
+  <span>{isPdfLoading ? 'Salvando...' : 'Salvar no Drive'}</span>
+</button>
   </div>
 )}
   return (
