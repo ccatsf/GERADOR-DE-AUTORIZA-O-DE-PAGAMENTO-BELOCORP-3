@@ -261,6 +261,7 @@ const App: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
      
   const handleLoadDoc = (savedDoc: any) => {
     const { id, uid, createdAt, updatedAt, ...docData } = savedDoc;
