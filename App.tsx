@@ -38,6 +38,7 @@ const App: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentDocId, setCurrentDocId] = useState<string | null>(null);
+  const [googleDriveToken, setGoogleDriveToken] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
@@ -139,12 +140,21 @@ const App: React.FC = () => {
     
     setIsSaving(true);
     try {
-      // 0. Tenta obter o token do Google logo no início para evitar bloqueio de pop-up
-      const provider = new GoogleAuthProvider();
-      provider.addScope('https://www.googleapis.com/auth/drive.file');
-      const result = await signInWithPopup(auth, provider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const googleToken = credential?.accessToken;
+      let googleToken = googleDriveToken;
+
+      // 0. Tenta obter o token apenas se não tiver um ou se o salvamento falhar depois
+      if (!googleToken) {
+        console.log("Obtendo nova autorização do Google Drive...");
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        googleToken = credential?.accessToken || null;
+        
+        if (googleToken) {
+          setGoogleDriveToken(googleToken); // Guarda o token para o próximo salvamento
+        }
+      }
 
       if (!googleToken) {
         throw new Error("Não foi possível obter acesso ao Google Drive. Verifique se as janelas pop-up estão liberadas.");
@@ -214,6 +224,12 @@ const App: React.FC = () => {
       await fetchHistory(user.uid);
     } catch (error: any) {
       console.error("Erro no Drive:", error);
+      
+      // Se for um erro de autorização, limpa o token para pedir novamente no próximo clique
+      if (error.message?.includes('401') || error.message?.includes('auth') || error.message?.includes('permission')) {
+        setGoogleDriveToken(null);
+      }
+      
       alert(`Erro ao salvar: ${error.message || "Verifique a conexão com o Google."}`);
     } finally {
       setIsSaving(false);
