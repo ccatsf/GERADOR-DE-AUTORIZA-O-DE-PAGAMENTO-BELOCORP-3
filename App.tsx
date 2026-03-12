@@ -1,5 +1,6 @@
 import { uploadFileToDrive } from './src_services_googleDriveService_Version2';import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
 import { parsePaymentText } from './services/geminiService.ts';
+import React, { useState, useEffect, useRef } from 'react';
 import PaymentForm from './PaymentForm.tsx';
 import DocumentPreview from './DocumentPreview.tsx';
 import { maskCurrency, parseCurrency } from './formatters.ts';
@@ -202,39 +203,25 @@ const App: React.FC = () => {
     }
   };
   
-   const handleSave = async () => {
+  const handleSave = async () => {
     if (!user) {
-      alert("Você precisa estar logado para salvar.");
-      return;
-    }
-
-    if (!data.clientName.trim()) {
-      alert("O nome do cliente é obrigatório para salvar.");
+      alert("Por favor, faça login para salvar.");
       return;
     }
 
     setIsSaving(true);
     try {
-      const payload = {
-        ...data,
-        uid: user.uid,
-        updatedAt: serverTimestamp()
-      };
+      const payload = { ...data, uid: user.uid, updatedAt: serverTimestamp() };
 
-      // 1. Salva no banco de dados
+      // Salva no Firebase
       if (currentDocId) {
         await updateDoc(doc(db, 'authorizations', currentDocId), payload);
-        console.log("✅ Documento atualizado");
       } else {
-        const docRef = await addDoc(collection(db, 'authorizations'), {
-          ...payload,
-          createdAt: serverTimestamp()
-        });
+        const docRef = await addDoc(collection(db, 'authorizations'), { ...payload, createdAt: serverTimestamp() });
         setCurrentDocId(docRef.id);
-        console.log("✅ Novo documento criado");
       }
-      
-      // 2. ENVIO PARA O DRIVE
+
+      // Envio para o Drive (Corrigido sem o erro 'v')
       const element = document.getElementById('autorizacao-documento');
       if (element) {
         const pdfBlob = await html2pdf().set({
@@ -245,24 +232,18 @@ const App: React.FC = () => {
         }).from(element).outputPdf('blob');
 
         const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
-        
-        await uploadFileToDrive(
-          `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
-          pdfBlob,
-          folderId
-        );
+        await uploadFileToDrive(`Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`, pdfBlob, folderId);
       }
 
       await fetchHistory(user.uid);
-      alert("✅ Salvo no sistema e no Google Drive com sucesso!");
+      alert("✅ Salvo com sucesso!");
     } catch (error) {
-      console.error("❌ Erro ao salvar:", error);
-      alert("Erro ao realizar o salvamento completo.");
+      console.error(error);
+      alert("Erro ao salvar.");
     } finally {
       setIsSaving(false);
     }
   };
-     
   const handleLoadDoc = (savedDoc: any) => {
     const { id, uid, createdAt, updatedAt, ...docData } = savedDoc;
     setData(docData);
