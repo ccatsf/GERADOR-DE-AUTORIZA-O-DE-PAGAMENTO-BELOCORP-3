@@ -134,13 +134,12 @@ const App: React.FC = () => {
   // FUNÇÃO DE SALVAR ÚNICA E MELHORADA
   const handleSave = async () => {
     if (!user) { alert("Faça login para salvar."); return; }
-    if (!data.clientName.trim()) { alert("Nome do cliente obrigatório."); return; }
-
+    
     setIsSaving(true);
     try {
       const payload = { ...data, uid: user.uid, updatedAt: serverTimestamp() };
 
-      // 1. Salva no Banco de Dados (Histórico)
+      // 1. Salva no Firebase (Histórico)
       if (currentDocId) {
         await updateDoc(doc(db, 'authorizations', currentDocId), payload);
       } else {
@@ -148,33 +147,37 @@ const App: React.FC = () => {
         setCurrentDocId(docRef.id);
       }
       
-      // 2. Salva no Google Drive (PDF Silencioso)
       const element = document.getElementById('autorizacao-documento');
+      
       if (element) {
         const pdfBlob = await html2pdf().set({
-          margin: 0,
+          margin: 10,
           filename: `Autorizacao_${data.clientName}.pdf`,
-          html2canvas: { scale: 3, useCORS: true },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         }).from(element).outputPdf('blob');
 
         const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
+        
         await uploadFileToDrive(
           `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
           pdfBlob,
           folderId
         );
+        alert("✅ Salvo no sistema e enviado ao Google Drive!");
+      } else {
+        // Se o elemento não for encontrado, ele salva apenas no sistema
+        alert("✅ Salvo no sistema! (Abra 'Ver Documento' para enviar ao Drive)");
       }
 
       await fetchHistory(user.uid);
-      alert("✅ Salvo no sistema e no Google Drive!");
     } catch (error) {
-      alert("Erro ao realizar o salvamento completo.");
+      console.error("Erro no Drive:", error);
+      alert("Erro ao salvar. Verifique a conexão com o Google.");
     } finally {
       setIsSaving(false);
     }
   };
-
   const handleLoadDoc = (savedDoc: any) => {
     const { id, uid, createdAt, updatedAt, ...docData } = savedDoc;
     setData(docData);
