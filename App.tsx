@@ -17,8 +17,7 @@ import {
   orderBy, 
   doc, 
   updateDoc, 
-  deleteDoc,
-  getDocFromServer
+  deleteDoc
 } from 'firebase/firestore';
 
 declare var html2pdf: any;
@@ -57,9 +56,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (currentUser) {
-        fetchHistory(currentUser.uid);
-      }
+      if (currentUser) fetchHistory(currentUser.uid);
     });
     return () => unsubscribe();
   }, []);
@@ -88,7 +85,7 @@ const App: React.FC = () => {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     } catch (error) {
-      alert("Erro ao fazer login. Verifique se os pop-ups estão permitidos.");
+      alert("Erro no login. Verifique pop-ups.");
     }
   };
 
@@ -106,25 +103,19 @@ const App: React.FC = () => {
       const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setSavedAuthorizations(docs);
     } catch (error) {
-      console.error("Erro ao buscar histórico:", error);
+      console.error(error);
     } finally {
       setIsHistoryLoading(false);
     }
   };
 
-  // FUNÇÃO DE SALVAMENTO NO DRIVE CORRIGIDA
   const handleSaveToDrive = async (elementId: string) => {
-    if (!data.clientName.trim()) {
-      alert("Por favor, preencha o nome do cliente antes de salvar.");
-      return;
-    }
-
+    if (!data.clientName.trim()) { alert("Preencha o nome do cliente."); return; }
     try {
       setIsPdfLoading(true);
       const element = document.getElementById(elementId);
-      if (!element) throw new Error("Elemento do documento não encontrado.");
+      if (!element) return;
 
-      // 1. Gerar o PDF como Blob
       const opt = {
         margin: 0,
         filename: `Autorizacao_${data.clientName}.pdf`,
@@ -134,32 +125,19 @@ const App: React.FC = () => {
       };
 
       const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
+      const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
+      const driveId = await uploadFileToDrive(`Autorizacao_${data.clientName}.pdf`, pdfBlob, folderId);
 
-      // 2. Tentar Upload para o Drive
-      const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X"; // Sua pasta Belocorp
-      const driveId = await uploadFileToDrive(
-        `Autorizacao_${data.clientName}.pdf`,
-        pdfBlob,
-        folderId
-      );
-
-      if (driveId) {
-        alert("✅ SUCESSO! O arquivo foi salvo no Google Drive da Belocorp.");
-      }
+      if (driveId) alert("✅ Salvo no Google Drive com sucesso!");
     } catch (error: any) {
-      console.error("Erro no Drive:", error);
-      if (error.message?.includes('popup_blocked') || error.code === 'auth/popup-blocked') {
-        alert("❌ O navegador bloqueou a janela. Clique no ícone de 'X' na barra de endereços e permita pop-ups.");
-      } else {
-        alert("❌ Erro ao salvar no Drive: " + (error.message || "Verifique sua conexão"));
-      }
+      alert("❌ Erro no Drive: " + error.message);
     } finally {
       setIsPdfLoading(false);
     }
   };
 
   const handleSave = async () => {
-    if (!user) { alert("Faça login para salvar."); return; }
+    if (!user) return;
     setIsSaving(true);
     try {
       const payload = { ...data, uid: user.uid, updatedAt: serverTimestamp() };
@@ -170,9 +148,9 @@ const App: React.FC = () => {
         setCurrentDocId(docRef.id);
       }
       await fetchHistory(user.uid);
-      alert("Salvo no sistema! Clique em 'Ver Documento' para enviar ao Drive.");
+      alert("Salvo no sistema!");
     } catch (error) {
-      alert("Erro ao salvar no sistema.");
+      alert("Erro ao salvar.");
     } finally {
       setIsSaving(false);
     }
@@ -200,36 +178,19 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20 bg-gray-100 dark:bg-zinc-900 transition-colors duration-300">
-      <nav className="bg-indigo-700 dark:bg-indigo-900 text-white shadow-lg p-4 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold">Belocorp - Gerador</h1>
+    <div className="min-h-screen pb-20 bg-gray-100 dark:bg-zinc-900">
+      <nav className="bg-indigo-700 dark:bg-indigo-900 text-white p-4 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <h1 className="text-xl font-bold">Belocorp - Gerador</h1>
+          <div className="flex gap-2">
             {user && (
-              <button onClick={() => setShowHistory(!showHistory)} className="text-indigo-200 hover:text-white text-sm">
-                <i className="fas fa-history mr-1"></i> Histórico
-              </button>
+              <>
+                <button onClick={() => setShowHistory(!showHistory)} className="text-sm mr-4">Histórico</button>
+                <button onClick={handleSave} disabled={isSaving} className="bg-indigo-500 px-3 py-1 rounded text-sm">Salvar</button>
+              </>
             )}
-          </div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded-lg bg-indigo-600">
-              <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'}`}></i>
-            </button>
-            {user ? (
-              <div className="flex items-center space-x-3">
-                <img src={user.photoURL || ''} className="w-8 h-8 rounded-full" />
-                <button onClick={handleLogout} className="text-xs underline">Sair</button>
-              </div>
-            ) : (
-              <button onClick={handleLogin} className="bg-white text-indigo-700 px-4 py-2 rounded-lg text-sm font-bold">Login Google</button>
-            )}
-            {user && (
-              <button onClick={handleSave} disabled={isSaving} className="bg-indigo-500 px-4 py-2 rounded-lg text-sm">
-                <i className="fas fa-save mr-1"></i> {currentDocId ? 'Atualizar' : 'Salvar'}
-              </button>
-            )}
-            <button onClick={() => setShowPreview(!showPreview)} className="bg-indigo-600 px-4 py-2 rounded-lg text-sm">
-              <i className={`fas ${showPreview ? 'fa-edit' : 'fa-eye'} mr-1`}></i> {showPreview ? 'Editar' : 'Visualizar'}
+            <button onClick={() => setShowPreview(!showPreview)} className="bg-indigo-600 px-3 py-1 rounded text-sm">
+              {showPreview ? 'Editar' : 'Visualizar'}
             </button>
           </div>
         </div>
@@ -237,29 +198,46 @@ const App: React.FC = () => {
 
       <main className="max-w-5xl mx-auto px-4 mt-8">
         {showHistory && user && (
-           <div className="fixed inset-0 bg-black/50 z-[60] flex justify-end" onClick={() => setShowHistory(false)}>
-              <div className="bg-white dark:bg-zinc-800 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-                <h2 className="text-xl font-bold mb-4 dark:text-white">Histórico</h2>
-                {savedAuthorizations.map(doc => (
-                  <div key={doc.id} onClick={() => { setData(doc); setCurrentDocId(doc.id); setShowHistory(false); }} className="p-3 border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-700 dark:text-white">
-                    {doc.clientName} - {new Date(doc.updatedAt?.seconds * 1000).toLocaleDateString()}
-                  </div>
-                ))}
-              </div>
-           </div>
+          <div className="fixed inset-0 bg-black/50 z-[60] flex justify-end" onClick={() => setShowHistory(false)}>
+            <div className="bg-white dark:bg-zinc-800 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+              <h2 className="text-xl font-bold mb-4 dark:text-white">Histórico</h2>
+              {savedAuthorizations.map(doc => (
+                <div key={doc.id} onClick={() => { setData(doc); setCurrentDocId(doc.id); setShowHistory(false); }} className="p-3 border-b cursor-pointer dark:text-white">
+                  {doc.clientName}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {!showPreview ? (
           <div className="space-y-6">
             <textarea
-              placeholder="Cole o texto para a IA preencher..."
-              className="w-full h-24 p-4 border rounded-lg dark:bg-zinc-800 dark:text-white"
+              placeholder="Cole o texto aqui..."
+              className="w-full h-24 p-4 border rounded dark:bg-zinc-800 dark:text-white"
               onBlur={(e) => handleAiFill(e.target.value)}
             ></textarea>
             {isAiLoading && <p className="text-indigo-500 animate-pulse">IA Processando...</p>}
-            
-            <div className="flex border-b">
-              <button onClick={() => setActive
+            <div className="flex border-b border-gray-200 dark:border-zinc-700">
+              <button onClick={() => setActiveTab('auth')} className={`px-4 py-2 ${activeTab === 'auth' ? 'border-b-2 border-indigo-700 dark:text-white' : 'text-gray-400'}`}>Autorização</button>
+              <button onClick={() => setActiveTab('cover')} className={`px-4 py-2 ${activeTab === 'cover' ? 'border-b-2 border-indigo-700 dark:text-white' : 'text-gray-400'}`}>Capa</button>
+            </div>
+            <PaymentForm data={data} activeTab={activeTab} onUpdate={handleUpdateData} onAddBeneficiary={handleAddBeneficiary} onRemoveBeneficiary={handleRemoveBeneficiary} onUpdateBeneficiary={handleUpdateBeneficiary} />
+          </div>
+        ) : (
+          <div className="relative">
+            <div className="flex gap-2 mb-4 no-print">
+              <button onClick={() => handleDownloadPdf('autorizacao-documento', 'Autorizacao')} className="bg-green-600 text-white px-4 py-2 rounded">PDF Local</button>
+              <button onClick={() => handleSaveToDrive('autorizacao-documento')} disabled={isPdfLoading} className="bg-blue-600 text-white px-4 py-2 rounded">
+                {isPdfLoading ? 'Salvando...' : 'Salvar no Drive'}
+              </button>
+            </div>
+            <DocumentPreview data={data} ref={previewRef} onUpdate={handleUpdateData} onUpdateBeneficiary={handleUpdateBeneficiary} />
+          </div>
+        )}
+      </main>
+    </div>
+  );
 };
 
 export default App;
