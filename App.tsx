@@ -222,6 +222,30 @@ const App: React.FC = () => {
       }
 
       await fetchHistory(user.uid);
+
+      // 5. Atualizar Diretório de Beneficiários (Alimentar o banco de dados)
+      try {
+        const batch = data.beneficiaries.map(async (b) => {
+          if (!b.name) return; // Só salva se tiver nome
+          
+          // O ID do documento no diretório será o nome normalizado para evitar duplicatas básicas
+          const beneficiaryId = b.document.replace(/\D/g, '') || b.name.toLowerCase().trim().replace(/\s+/g, '_');
+          const beneficiaryRef = doc(db, 'beneficiaries_directory', beneficiaryId);
+          
+          // Prepara os dados para salvar (remove o ID interno do formulário)
+          const { id, amount, ...directoryData } = b;
+          
+          await setDoc(beneficiaryRef, {
+            ...directoryData,
+            updatedAt: serverTimestamp(),
+            lastUsedBy: user.uid
+          }, { merge: true });
+        });
+        await Promise.all(batch);
+      } catch (err) {
+        console.warn("Aviso: Falha ao atualizar diretório de beneficiários:", err);
+      }
+
     } catch (error: any) {
       console.error("Erro no Drive:", error);
       
@@ -370,3 +394,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
