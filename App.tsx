@@ -34,8 +34,10 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'auth' | 'cover'>('auth');
   const [user, setUser] = useState<User | null>(null);
   const [savedAuthorizations, setSavedAuthorizations] = useState<any[]>([]);
+  const [beneficiariesDirectory, setBeneficiariesDirectory] = useState<any[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showDirectory, setShowDirectory] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentDocId, setCurrentDocId] = useState<string | null>(null);
   const [googleDriveToken, setGoogleDriveToken] = useState<string | null>(null);
@@ -76,6 +78,7 @@ const App: React.FC = () => {
       setUser(currentUser);
       if (currentUser) {
         fetchHistory(currentUser.uid);
+        fetchBeneficiariesDirectory();
       } else {
         setSavedAuthorizations([]);
       }
@@ -132,6 +135,16 @@ const App: React.FC = () => {
       const querySnapshot = await getDocs(q);
       setSavedAuthorizations(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } finally { setIsHistoryLoading(false); }
+  };
+
+  const fetchBeneficiariesDirectory = async () => {
+    try {
+      const q = query(collection(db, 'beneficiaries_directory'), orderBy('name', 'asc'));
+      const querySnapshot = await getDocs(q);
+      setBeneficiariesDirectory(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (error) {
+      console.error("Erro ao carregar diretório:", error);
+    }
   };
   
   // FUNÇÃO DE SALVAR ÚNICA E MELHORADA
@@ -289,6 +302,39 @@ const App: React.FC = () => {
     } finally { setIsAiLoading(false); }
   };
 
+  const handleDeleteBeneficiary = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm("Excluir este beneficiário da base de dados?")) return;
+    try {
+      await deleteDoc(doc(db, 'beneficiaries_directory', id));
+      fetchBeneficiariesDirectory();
+    } catch (error) {
+      alert("Erro ao excluir beneficiário.");
+    }
+  };
+
+  const handleUseBeneficiary = (beneficiary: any) => {
+    // Adiciona o beneficiário ao formulário atual
+    const newBeneficiary: Beneficiary = {
+      id: crypto.randomUUID(),
+      name: beneficiary.name,
+      pix: beneficiary.pix || '',
+      document: beneficiary.document || '',
+      type: beneficiary.type || '',
+      bank: beneficiary.bank || '',
+      agency: beneficiary.agency || '',
+      account: beneficiary.account || '',
+      amount: ''
+    };
+
+    setData(prev => ({
+      ...prev,
+      beneficiaries: [...prev.beneficiaries, newBeneficiary]
+    }));
+    setShowDirectory(false);
+    alert(`${beneficiary.name} adicionado ao formulário!`);
+  };
+
   const handleDownloadPdf = async (elementId: string, suffix: string) => {
     const element = document.getElementById(elementId);
     if (!element) return;
@@ -309,10 +355,21 @@ const App: React.FC = () => {
               <h1 className="text-xl font-bold tracking-tight">Gerador de Autorização</h1>
             </div>
             {user && (
-              <button onClick={() => setShowHistory(!showHistory)} className="text-indigo-200 hover:text-white transition text-sm flex items-center space-x-1">
-                <i className="fas fa-history"></i>
-                <span>Meus Salvos</span>
-              </button>
+              <div className="flex items-center space-x-3 no-print">
+                <button 
+                  onClick={() => setShowDirectory(true)} 
+                  className="text-indigo-200 hover:text-white transition text-sm flex items-center space-x-1"
+                  title="Ver base de dados de beneficiários"
+                >
+                  <i className="fas fa-address-book"></i>
+                  <span className="hidden md:inline">Beneficiários</span>
+                </button>
+
+                <button onClick={() => setShowHistory(!showHistory)} className="text-indigo-200 hover:text-white transition text-sm flex items-center space-x-1">
+                  <i className="fas fa-history"></i>
+                  <span>Meus Salvos</span>
+                </button>
+              </div>
             )}
           </div>
           <div className="flex flex-wrap justify-center gap-2 items-center">
@@ -371,6 +428,73 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {showDirectory && user && (
+          <div className="fixed inset-0 bg-black/50 z-[70] flex justify-center items-center p-4 no-print" onClick={() => setShowDirectory(false)}>
+            <div className="bg-white dark:bg-zinc-800 w-full max-w-4xl max-h-[90vh] shadow-2xl rounded-2xl p-6 overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-6 border-b pb-4 dark:border-zinc-700">
+                <h2 className="text-xl font-bold dark:text-white flex items-center">
+                  <i className="fas fa-address-book mr-3 text-indigo-500"></i>
+                  Base de Dados de Beneficiários
+                </h2>
+                <button onClick={() => setShowDirectory(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                  <i className="fas fa-times text-xl"></i>
+                </button>
+              </div>
+
+              <div className="overflow-y-auto flex-1 pr-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {beneficiariesDirectory.length > 0 ? (
+                    beneficiariesDirectory.map((b) => (
+                      <div 
+                        key={b.id} 
+                        className="p-4 rounded-xl border dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50 hover:border-indigo-500 dark:hover:border-indigo-400 transition-all group"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="font-bold text-gray-800 dark:text-white uppercase text-sm">{b.name}</h3>
+                            <p className="text-[10px] text-indigo-500 font-bold">{b.document}</p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button 
+                              onClick={() => handleUseBeneficiary(b)}
+                              className="text-indigo-500 hover:text-indigo-600 p-1 bg-white dark:bg-zinc-800 rounded shadow-sm"
+                              title="Adicionar ao formulário"
+                            >
+                              <i className="fas fa-plus"></i>
+                            </button>
+                            <button 
+                              onClick={(e) => handleDeleteBeneficiary(b.id, e)} 
+                              className="text-red-400 hover:text-red-600 p-1 bg-white dark:bg-zinc-800 rounded shadow-sm"
+                              title="Excluir da base"
+                            >
+                              <i className="fas fa-trash-alt"></i>
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-gray-500 dark:text-zinc-400">
+                          <div><span className="font-semibold">Banco:</span> {b.bank}</div>
+                          <div><span className="font-semibold">Tipo:</span> {b.type}</div>
+                          <div><span className="font-semibold">Ag:</span> {b.agency}</div>
+                          <div><span className="font-semibold">CC:</span> {b.account}</div>
+                          <div className="col-span-2 mt-1 truncate"><span className="font-semibold">PIX:</span> {b.pix}</div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full text-center py-10 text-gray-400">
+                      Nenhum beneficiário salvo na base de dados ainda.
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-6 pt-4 border-t dark:border-zinc-700 text-center text-xs text-gray-400 italic">
+                Os dados nesta base são compartilhados entre todos os usuários autorizados.
+              </div>
+            </div>
+          </div>
+        )}
+
         {!showPreview ? (
           <div className="space-y-6">
             <section className="bg-white dark:bg-zinc-800 p-6 rounded-xl shadow-sm border dark:border-zinc-700">
@@ -394,4 +518,5 @@ const App: React.FC = () => {
 };
 
 export default App;
+
 
