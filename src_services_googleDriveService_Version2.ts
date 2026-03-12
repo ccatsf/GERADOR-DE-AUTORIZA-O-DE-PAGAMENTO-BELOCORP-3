@@ -122,3 +122,67 @@ export const createFolderInDrive = async (folderName: string): Promise<string> =
     throw error;
   }
 };
+
+export const findOrCreateFolder = async (
+  folderName: string,
+  accessToken: string
+): Promise<string> => {
+  try {
+    // 1. Search for the folder in the root directory
+    const query = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
+    const searchResponse = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id, name)`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!searchResponse.ok) {
+      const errorData = await searchResponse.json();
+      console.error("Erro na busca de pasta:", errorData);
+      throw new Error(`Erro ao buscar pasta: ${searchResponse.statusText}`);
+    }
+
+    const searchData = await searchResponse.json();
+
+    if (searchData.files && searchData.files.length > 0) {
+      // Folder found, return its ID
+      console.log(`Pasta '${folderName}' encontrada com ID:`, searchData.files[0].id);
+      return searchData.files[0].id;
+    } else {
+      // 2. Folder not found, create it
+      console.log(`Pasta '${folderName}' não encontrada. Criando...`);
+      const metadata = {
+        name: folderName,
+        mimeType: 'application/vnd.google-apps.folder',
+      };
+
+      const createResponse = await fetch(
+        'https://www.googleapis.com/drive/v3/files',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(metadata),
+        }
+      );
+
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json();
+        console.error("Erro na criação de pasta:", errorData);
+        throw new Error(`Erro ao criar pasta: ${createResponse.statusText}`);
+      }
+
+      const createData = await createResponse.json();
+      console.log(`Pasta '${folderName}' criada com ID:`, createData.id);
+      return createData.id;
+    }
+  } catch (error) {
+    console.error(`❌ Erro ao encontrar ou criar pasta '${folderName}':`, error);
+    throw error;
+  }
+};
