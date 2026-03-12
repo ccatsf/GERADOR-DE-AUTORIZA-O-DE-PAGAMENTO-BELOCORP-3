@@ -168,26 +168,32 @@ const App: React.FC = () => {
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         }).from(element).outputPdf('blob');
 
-        const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
-        
+        // 1. Get or Create the user-specific folder in Google Drive
+        const userEmail = user.email;
+        if (!userEmail) {
+          throw new Error("Não foi possível identificar o e-mail do usuário para criar a pasta.");
+        }
+        const folderId = await findOrCreateFolder(userEmail, googleToken);
+
+        // 2. Upload the file to that folder
         try {
           await uploadFileToDrive(
             `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
             pdfBlob,
-            folderId,
+            folderId, // Use the user-specific folder ID
             googleToken
           );
         } catch (driveError: any) {
           console.warn("Falha ao salvar na pasta específica, tentando na raiz:", driveError);
-          // Tenta salvar na raiz se a pasta falhar
+          // Fallback: Try saving to the root if the specific folder fails
           await uploadFileToDrive(
             `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
             pdfBlob,
-            undefined,
+            undefined, // Save to root
             googleToken
           );
         }
-        alert("✅ Salvo no sistema e enviado ao Google Drive!");
+        alert("✅ Salvo no sistema e enviado para sua pasta no Google Drive!");
       } else {
         // Se o elemento não for encontrado, ele salva apenas no sistema
         alert("✅ Salvo no sistema! (Abra 'Ver Documento' para enviar ao Drive)");
@@ -336,5 +342,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
-
