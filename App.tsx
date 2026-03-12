@@ -170,28 +170,38 @@ const App: React.FC = () => {
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         }).from(element).outputPdf('blob');
 
-        // 1. Get or Create the user-specific folder in Google Drive
-        const userEmail = user.email;
-        if (!userEmail) {
-          throw new Error("Não foi possível identificar o e-mail do usuário para criar a pasta.");
-        }
-        const folderId = await findOrCreateFolder(userEmail, googleToken);
+        // 1. Verificar se o usuário já tem uma pasta vinculada no Firestore
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        let folderId = userDoc.exists() ? userDoc.data().driveFolderId : null;
 
-        // 2. Upload the file to that folder
+        if (!folderId) {
+          // 2. Se não tiver ID salvo, busca pelo e-mail ou cria uma nova
+          const userEmail = user.email;
+          if (!userEmail) throw new Error("E-mail não identificado.");
+          
+          console.log("Vínculo de pasta não encontrado no sistema. Buscando no Drive...");
+          folderId = await findOrCreateFolder(userEmail, googleToken);
+          
+          // 3. Salva o ID da pasta no Firestore para nunca mais precisar buscar pelo nome
+          await setDoc(userRef, { driveFolderId: folderId }, { merge: true });
+          console.log("ID da pasta vinculado ao seu usuário com sucesso!");
+        }
+
+        // 4. Envia o arquivo para a pasta vinculada (pode renomear no Drive à vontade!)
         try {
           await uploadFileToDrive(
             `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
             pdfBlob,
-            folderId, // Use the user-specific folder ID
+            folderId,
             googleToken
           );
         } catch (driveError: any) {
           console.warn("Falha ao salvar na pasta específica, tentando na raiz:", driveError);
-          // Fallback: Try saving to the root if the specific folder fails
           await uploadFileToDrive(
             `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
             pdfBlob,
-            undefined, // Save to root
+            undefined,
             googleToken
           );
         }
@@ -342,5 +352,7 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+export default App;
 
 export default App;
