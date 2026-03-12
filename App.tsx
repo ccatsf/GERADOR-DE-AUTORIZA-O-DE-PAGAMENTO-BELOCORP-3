@@ -1,6 +1,6 @@
+import React, { useState, useEffect, useRef } from 'react';
 import { uploadFileToDrive } from './src_services_googleDriveService_Version2';import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
 import { parsePaymentText } from './services/geminiService.ts';
-import React, { useState, useEffect, useRef } from 'react';
 import PaymentForm from './PaymentForm.tsx';
 import DocumentPreview from './DocumentPreview.tsx';
 import { maskCurrency, parseCurrency } from './formatters.ts';
