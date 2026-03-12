@@ -18,6 +18,8 @@ import {
   doc, 
   updateDoc, 
   deleteDoc,
+  getDoc,
+  setDoc,
   getDocFromServer
 } from 'firebase/firestore';
 
