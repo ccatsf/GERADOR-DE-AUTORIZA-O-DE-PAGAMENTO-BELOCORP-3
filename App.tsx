@@ -369,14 +369,15 @@ const handleSave = async () => {
 
         const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
         await uploadFileToDrive(
-          `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
-          pdfBlob,
-          folderId
+      `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
+      new Blob([canvas], { type: 'application/pdf' }),
+      folderId
         );
       }
 
       await fetchHistory(user.uid);
       alert("✅ Salvo no sistema e no Google Drive com sucesso!");
+      await handleSaveToDrive('autorizacao-documento', 'Autorização');
     } catch (error) {
       console.error("Erro ao salvar:", error);
       alert("Erro ao realizar o salvamento completo.");
