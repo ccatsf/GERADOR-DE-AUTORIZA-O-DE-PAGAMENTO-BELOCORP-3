@@ -1,5 +1,4 @@
-import { uploadFileToDrive } from './src_services_googleDriveService_Version2';import React, { useState, useRef, useEffect } from 'react';
-import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
+import { uploadFileToDrive } from './src_services_googleDriveService_Version2';import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
 import { parsePaymentText } from './services/geminiService.ts';
 import PaymentForm from './PaymentForm.tsx';
 import DocumentPreview from './DocumentPreview.tsx';
@@ -329,41 +328,48 @@ const App: React.FC = () => {
       setIsPdfLoading(false);
     }
   };
-  const handleSaveToDrive = async (elementId: string, fileName: string) => {
+ const handleSave = async () => {
+  // ... (seu código original de validação de usuário e nome)
+
+  setIsSaving(true);
   try {
-    setIsPdfLoading(true);
+    // 1. SEU CÓDIGO ORIGINAL (Salva no Firebase)
+    const payload = { ...data, uid: user.uid, updatedAt: serverTimestamp() };
+    if (currentDocId) {
+      await updateDoc(doc(db, 'authorizations', currentDocId), payload);
+    } else {
+      const docRef = await addDoc(collection(db, 'authorizations'), { ...payload, createdAt: serverTimestamp() });
+      setCurrentDocId(docRef.id);
+    }
+
+    // 2. A ALTERAÇÃO DE CÓDIGO (Salva no Drive automaticamente)
+    // Buscamos o elemento da autorização que você já desenhou no layout
+    const element = document.getElementById('autorizacao-documento');
+    if (element) {
+      const pdfBlob = await html2pdf().set({
+        margin: 0,
+        filename: `Autorizacao_${data.clientName}.pdf`,
+        html2canvas: { scale: 3, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).from(element).outputPdf('blob');
+
+      const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X"; // Sua pasta da Belocorp
+      
+      await uploadFileToDrive(
+        `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
+        pdfBlob,
+        folderId
+      );
+    }
     
-    // Gerar PDF
-    const element = document.getElementById(elementId);
-    if (!element) return;
-
-    const canvas = await html2pdf().set({
-      margin: 0,
-      filename: fileName,
-      image: { type: 'jpeg', quality: 1.0 },
-      html2canvas: { scale: 3, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(element).outputPdf('blob');
-
-    // Criar pasta no Google Drive
-    const folderName = `Autorização_${data.clientName}_${new Date().toISOString().split('T')[0]}`;
-    const folderId = "1vFEgKm26lA7LBrFqh3Tv3zsHVWthne_X";
-    // Upload do PDF
-    await uploadFileToDrive(
-      `${NUVEM}_${data.clientName}.pdf`,
-      new Blob([canvas], { type: 'application/pdf' }),
-      folderId
-    );
-
-    alert("✅ Documento salvo no Google Drive com sucesso!");
+    await fetchHistory(user.uid);
+    alert("Documento salvo no site e no Google Drive!"); // Aviso unificado
   } catch (error) {
-    console.error("❌ Erro:", error);
-    alert("Erro ao salvar no Google Drive");
+    console.error("Erro ao salvar:", error);
   } finally {
-    setIsPdfLoading(false);
+    setIsSaving(false);
   }
 };
-  
   {showPreview && (
   <>
     {/* Botões existentes de download... */}
