@@ -179,3 +179,46 @@ export const getSheetNames = async (accessToken?: string): Promise<string[]> => 
   if (!data.sheets) return [];
   return data.sheets.map((s: any) => s.properties.title);
 };
+
+export const countActiveClients = async (sheetName: string, accessToken?: string): Promise<number> => {
+  let token = accessToken;
+
+  if (!token) {
+    // Se não tiver token, não tenta logar automaticamente para não bloquear popup.
+    // Retorna 0 ou lança erro silencioso.
+    console.warn("Token não fornecido para contagem de clientes.");
+    return 0;
+  }
+
+  // Busca coluna A (Tipo de PG)
+  const response = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A4:A500`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    console.error("Erro ao buscar dados para contagem de clientes");
+    return 0;
+  }
+
+  const data = await response.json();
+  const values = data.values || [];
+  
+  // Conta quantos são "PAGAMENTO" ou "QUITAÇÃO" (case insensitive)
+  let count = 0;
+  values.forEach((row: any[]) => {
+    if (row[0]) {
+      const type = row[0].toString().toUpperCase().trim();
+      if (type === 'PAGAMENTO' || type === 'QUITAÇÃO' || type === 'QUITACAO') {
+        count++;
+      }
+    }
+  });
+
+  return count;
+};
+
