@@ -108,4 +108,3 @@ export const getSheetNames = async (accessToken?: string): Promise<string[]> => 
   const data = await response.json();
   return data.sheets.map((s: any) => s.properties.title);
 };
-
