@@ -1,6 +1,6 @@
 import { findOrCreateFolder, uploadFileToDrive } from './src_services_googleDriveService_Version2';
 import React, { useState, useRef, useEffect } from 'react';
-import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
+import { PaymentAuthData, Beneficiary } from './types';
 import { parsePaymentText } from './services/geminiService.ts';
 import PaymentForm from './PaymentForm.tsx';
 import DocumentPreview from './DocumentPreview.tsx';
@@ -24,6 +24,28 @@ import {
 
 // Declarando html2pdf para o TypeScript
 declare var html2pdf: any;
+
+const INITIAL_AUTH_DATA: PaymentAuthData = {
+  clientName: '',
+  clientCpf: '',
+  contractNumber: '',
+  totalAmount: '',
+  isContractAdditive: '',
+  needsGuarantor: '',
+  doctorName: '',
+  paymentAmount: '',
+  beneficiaries: [{
+    id: '1',
+    name: '',
+    pix: '',
+    document: '',
+    type: '',
+    bank: '',
+    agency: '',
+    account: '',
+    amount: '',
+  }],
+};
 
 interface PaymentGeneratorProps {
   user: User | null;
@@ -76,7 +98,17 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user, onBack }) => 
   const handleAddBeneficiary = () => {
     setData(prev => ({
       ...prev,
-      beneficiaries: [...prev.beneficiaries, { id: crypto.randomUUID(), name: '', pix: '', document: '', type: '', bank: '', agency: '', account: '', amount: '' }]
+      beneficiaries: [...prev.beneficiaries, { 
+        id: Math.random().toString(36).substring(2, 9), 
+        name: '', 
+        pix: '', 
+        document: '', 
+        type: '', 
+        bank: '', 
+        agency: '', 
+        account: '', 
+        amount: '' 
+      }]
     }));
   };
 
@@ -235,7 +267,7 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user, onBack }) => 
       const parsed = await parsePaymentText(text);
       setData(prev => ({
         ...prev, ...parsed,
-        beneficiaries: (parsed as any).beneficiaries?.map((b: any, i: number) => ({ ...b, id: prev.beneficiaries[i]?.id || crypto.randomUUID() })) || prev.beneficiaries
+        beneficiaries: (parsed as any).beneficiaries?.map((b: any, i: number) => ({ ...b, id: prev.beneficiaries[i]?.id || Math.random().toString(36).substring(2, 9) })) || prev.beneficiaries
       }));
     } finally { setIsAiLoading(false); }
   };
@@ -253,7 +285,7 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user, onBack }) => 
 
   const handleUseBeneficiary = (beneficiary: any) => {
     const newBeneficiary: Beneficiary = {
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).substring(2, 9),
       name: beneficiary.name,
       pix: beneficiary.pix || '',
       document: beneficiary.document || '',
