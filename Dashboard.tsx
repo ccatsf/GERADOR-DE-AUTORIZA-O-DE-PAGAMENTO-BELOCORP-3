@@ -46,8 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
   ];
 
   return (
-    <div className="space-y-8 bg-red-500/10">
-      <h1 className="text-white bg-red-600 p-2">DASHBOARD COMPONENT OK</h1>
+    <div className="space-y-8">
       {/* Banner Frase do Dia */}
       <div className="bg-purple-100 dark:bg-purple-900/30 p-8 rounded-3xl flex items-center space-x-6 relative overflow-hidden">
         <div className="bg-purple-600 text-white p-4 rounded-2xl z-10">
@@ -174,5 +173,3 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
 };
 
 export default Dashboard;
-
-
