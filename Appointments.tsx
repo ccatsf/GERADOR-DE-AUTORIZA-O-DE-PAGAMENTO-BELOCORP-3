@@ -36,26 +36,45 @@ const Appointments: React.FC<AppointmentsProps> = ({ user }) => {
   const handleConnect = async () => {
     try {
       setIsLoading(true);
+      console.log("Iniciando conexão com Google Sheets...");
       const provider = new GoogleAuthProvider();
+      // Scopes necessários para Planilhas
       provider.addScope('https://www.googleapis.com/auth/spreadsheets');
+      
       const result = await signInWithPopup(auth, provider);
+      console.log("Autenticação Google realizada com sucesso");
+      
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential?.accessToken || null;
-      setAccessToken(token);
-
-      if (token) {
-        const names = await getSheetNames(token);
-        setSheetNames(names);
-        
-        const now = new Date();
-        const months = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
-        const currentMonthName = months[now.getMonth()];
-        const matchingSheet = names.find(n => n.toUpperCase().includes(currentMonthName)) || names[0];
-        setCurrentSheet(matchingSheet);
+      
+      if (!token) {
+        throw new Error("Não foi possível obter o token de acesso do Google.");
       }
-    } catch (err) {
-      console.error("Erro ao carregar abas:", err);
-      alert("Erro ao conectar com Google Sheets.");
+
+      setAccessToken(token);
+      console.log("Token obtido, buscando nomes das abas...");
+
+      const names = await getSheetNames(token);
+      console.log("Abas encontradas:", names);
+      setSheetNames(names);
+      
+      const now = new Date();
+      const months = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+      const currentMonthName = months[now.getMonth()];
+      const matchingSheet = names.find(n => n.toUpperCase().includes(currentMonthName)) || names[0];
+      setCurrentSheet(matchingSheet);
+      
+    } catch (err: any) {
+      console.error("Erro detalhado na conexão:", err);
+      let errorMsg = "Erro ao conectar com Google Sheets.";
+      
+      if (err.code === 'auth/popup-blocked') {
+        errorMsg = "O navegador bloqueou o pop-up de login. Por favor, habilite pop-ups para este site.";
+      } else if (err.message) {
+        errorMsg = `Erro: ${err.message}`;
+      }
+      
+      alert(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -348,4 +367,5 @@ const Appointments: React.FC<AppointmentsProps> = ({ user }) => {
 };
 
 export default Appointments;
+
 
