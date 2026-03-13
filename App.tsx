@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { auth, googleProvider } from './firebase.ts';
+import { auth, googleProvider } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import Dashboard from './Dashboard.tsx';
-import PaymentGenerator from './PaymentGenerator.tsx';
+import Dashboard from './Dashboard';
+import PaymentGenerator from './PaymentGenerator';
+import Appointments from './Appointments';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -130,7 +131,9 @@ const App: React.FC = () => {
           <div className="lg:hidden">
              <h1 className="text-white text-xs font-bold tracking-widest">ADM BELOCORP</h1>
           </div>
-          <h2 className="text-white lg:text-black dark:lg:text-white text-xl font-black uppercase tracking-[0.3em] mx-auto lg:ml-0 lg:mr-auto">DASHBOARD</h2>
+          <h2 className="text-white lg:text-black dark:lg:text-white text-xl font-black uppercase tracking-[0.3em] mx-auto lg:ml-0 lg:mr-auto">
+            {activeTab === 'dashboard' ? 'DASHBOARD' : activeTab === 'payment' ? 'GERADOR' : 'AGENDAMENTOS'}
+          </h2>
           <div className="flex items-center space-x-6">
             <button onClick={() => setIsDarkMode(!isDarkMode)} className="text-gray-400 hover:text-purple-500 transition-colors">
               <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'} text-xl`}></i>
@@ -147,6 +150,7 @@ const App: React.FC = () => {
 
         {/* Dynamic Content */}
         <div className="flex-1 overflow-y-auto p-8 lg:p-12">
+          <h1 className="text-white">SISTEMA CARREGADO - {activeTab}</h1>
           {activeTab === 'dashboard' ? (
             <Dashboard user={user} onNavigate={setActiveTab} />
           ) : activeTab === 'payment' ? (
@@ -160,6 +164,17 @@ const App: React.FC = () => {
                </button>
                <PaymentGenerator user={user} />
             </div>
+          ) : activeTab === 'appointments' ? (
+            <div className="animate-fadeIn">
+               <button 
+                 onClick={() => setActiveTab('dashboard')} 
+                 className="mb-6 flex items-center space-x-2 text-gray-500 hover:text-purple-600 font-bold uppercase text-xs tracking-widest transition-colors"
+               >
+                 <i className="fas fa-arrow-left"></i>
+                 <span>Voltar ao Dashboard</span>
+               </button>
+               <Appointments user={user} />
+            </div>
           ) : null}
         </div>
       </main>
@@ -168,5 +183,6 @@ const App: React.FC = () => {
 };
 
 export default App;
+
 
 
