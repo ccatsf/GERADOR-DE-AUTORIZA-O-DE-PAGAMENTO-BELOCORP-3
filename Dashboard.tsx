@@ -131,73 +131,75 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
 
       {/* Atividades e Calendário */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Lista de Afazeres (Substituindo Gráficos) */}
+        {/* Lista de Afazeres (Estilo Fiel à Foto) */}
         <div className="lg:col-span-2">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-sm">Lista de Afazeres Diários</h3>
-            <button 
-              onClick={() => setIsAddingTodo(!isAddingTodo)}
-              className="bg-purple-100 dark:bg-purple-900/30 text-purple-600 p-2 rounded-full hover:scale-110 transition-transform"
-            >
-              <i className={`fas ${isAddingTodo ? 'fa-times' : 'fa-plus'}`}></i>
-            </button>
-          </div>
+          <div className="bg-gray-50/50 dark:bg-zinc-900/30 p-8 rounded-[40px] border border-gray-100 dark:border-zinc-800">
+            <div className="flex justify-between items-center mb-10">
+              <h3 className="text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest text-sm">Lista de Afazeres Diários</h3>
+              <button 
+                onClick={() => setIsAddingTodo(!isAddingTodo)}
+                className="w-10 h-10 bg-white dark:bg-zinc-800 text-purple-600 rounded-full shadow-sm flex items-center justify-center hover:scale-110 transition-transform border border-gray-100 dark:border-zinc-700"
+              >
+                <i className={`fas ${isAddingTodo ? 'fa-times' : 'fa-plus'}`}></i>
+              </button>
+            </div>
 
-          <div className="space-y-4">
-            {isAddingTodo && (
-              <form onSubmit={handleAddTodo} className="animate-fadeIn">
-                <input 
-                  autoFocus
-                  type="text"
-                  value={newTodo}
-                  onChange={(e) => setNewTodo(e.target.value)}
-                  placeholder="O que precisa ser feito?"
-                  className="w-full bg-white dark:bg-zinc-800 p-4 rounded-2xl border dark:border-zinc-700 outline-none focus:ring-2 focus:ring-purple-500 dark:text-white"
-                />
-              </form>
-            )}
+            <div className="space-y-4">
+              {isAddingTodo && (
+                <form onSubmit={handleAddTodo} className="animate-fadeIn mb-6">
+                  <input 
+                    autoFocus
+                    type="text"
+                    value={newTodo}
+                    onChange={(e) => setNewTodo(e.target.value)}
+                    placeholder="O que precisa ser feito?"
+                    className="w-full bg-white dark:bg-zinc-800 p-5 rounded-[25px] border border-gray-100 dark:border-zinc-700 shadow-sm outline-none focus:ring-2 focus:ring-purple-500 dark:text-white font-medium"
+                  />
+                </form>
+              )}
 
-            {todos.length > 0 ? (
-              todos.map((todo) => (
-                <div 
-                  key={todo.id}
-                  className={`group flex items-center justify-between p-4 rounded-2xl border transition-all hover:shadow-md ${
-                    todo.completed 
-                      ? 'bg-gray-50 dark:bg-zinc-900/50 border-gray-100 dark:border-zinc-800 opacity-60' 
-                      : 'bg-white dark:bg-zinc-800 border-gray-100 dark:border-zinc-700'
-                  }`}
-                >
-                  <div className="flex items-center space-x-4 flex-1">
-                    <button 
-                      onClick={() => toggleTodo(todo)}
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+              <div className="space-y-4">
+                {todos.length > 0 ? (
+                  todos.map((todo) => (
+                    <div 
+                      key={todo.id}
+                      className={`group flex items-center justify-between p-5 rounded-[25px] transition-all ${
                         todo.completed 
-                          ? 'bg-purple-500 border-purple-500 text-white' 
-                          : 'border-gray-300 dark:border-zinc-600 hover:border-purple-500'
+                          ? 'bg-gray-100/50 dark:bg-zinc-800/40 opacity-70' 
+                          : 'bg-white dark:bg-zinc-800 shadow-sm border border-gray-50 dark:border-zinc-700'
                       }`}
                     >
-                      {todo.completed && <i className="fas fa-check text-[10px]"></i>}
-                    </button>
-                    <span className={`text-gray-700 dark:text-gray-200 font-medium ${todo.completed ? 'line-through' : ''}`}>
-                      {todo.text}
-                    </span>
+                      <div className="flex items-center space-x-5 flex-1 cursor-pointer" onClick={() => toggleTodo(todo)}>
+                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
+                          todo.completed 
+                            ? 'bg-transparent border-purple-400 text-purple-500' 
+                            : 'border-gray-200 dark:border-zinc-600'
+                        }`}>
+                          {todo.completed && <i className="fas fa-check text-xs"></i>}
+                        </div>
+                        <span className={`text-gray-600 dark:text-gray-300 font-bold text-lg ${todo.completed ? 'line-through text-gray-400' : ''}`}>
+                          {todo.text}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); deleteTodo(todo.id); }}
+                        className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2"
+                      >
+                        <i className="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-10">
+                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Nenhuma tarefa pendente</p>
                   </div>
-                  <button 
-                    onClick={() => deleteTodo(todo.id)}
-                    className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2"
-                  >
-                    <i className="fas fa-trash-alt"></i>
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div className="bg-white dark:bg-zinc-800 p-12 rounded-3xl border dark:border-zinc-700 text-center">
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Nenhuma tarefa para hoje</p>
+                )}
               </div>
-            )}
+            </div>
+          </div>
 
-            {/* Cards de Atividades integrados abaixo da lista */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+          {/* Cards de Atividades integrados abaixo da lista */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-12">
               <ActivityCard 
                 icon="fa-file-alt" 
                 title="CRM - Captação de Docs" 
@@ -263,5 +265,3 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
 };
 
 export default Dashboard;
-
-
