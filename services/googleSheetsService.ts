@@ -1,7 +1,7 @@
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../firebase';
 
-const SPREADSHEET_ID = '1cGmomn3kLikEwlwjKsKLEONOt2A3nFQI3jrVXsYqn70';
+const SPREADSHEET_ID = '1cGmomn3kLikEwlwjKsKLEONOt2A3nFQI3jrVXsYqn70'.trim();
 
 export interface SheetRow {
   tipoDePg: string;
@@ -108,4 +108,3 @@ export const getSheetNames = async (accessToken?: string): Promise<string[]> => 
   if (!data.sheets) return [];
   return data.sheets.map((s: any) => s.properties.title);
 };
-
