@@ -150,7 +150,6 @@ const App: React.FC = () => {
 
         {/* Dynamic Content */}
         <div className="flex-1 overflow-y-auto p-8 lg:p-12">
-          <h1 className="text-white">SISTEMA CARREGADO - {activeTab}</h1>
           {activeTab === 'dashboard' ? (
             <Dashboard user={user} onNavigate={setActiveTab} />
           ) : activeTab === 'payment' ? (
@@ -183,6 +182,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
-
-
