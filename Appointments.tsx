@@ -7,6 +7,7 @@ import { maskCurrency, parseCurrency } from './formatters';
 interface AppointmentsProps {
   user: User | null;
   onBack?: () => void;
+  onConnect?: (token: string) => void;
 }
 
 interface AppointmentDay {
@@ -17,7 +18,7 @@ interface AppointmentDay {
   available: boolean;
 }
 
-const Appointments: React.FC<AppointmentsProps> = ({ user, onBack }) => {
+const Appointments: React.FC<AppointmentsProps> = ({ user, onBack, onConnect }) => {
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [currentSheet, setCurrentSheet] = useState<string>('');
   const [days, setDays] = useState<AppointmentDay[]>([]);
@@ -53,6 +54,7 @@ const Appointments: React.FC<AppointmentsProps> = ({ user, onBack }) => {
       }
 
       setAccessToken(token);
+      if (onConnect) onConnect(token);
       console.log("Token obtido, buscando nomes das abas...");
 
       const names = await getSheetNames(token);
@@ -385,5 +387,6 @@ const Appointments: React.FC<AppointmentsProps> = ({ user, onBack }) => {
 };
 
 export default Appointments;
+
 
 
