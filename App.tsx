@@ -4,10 +4,13 @@ import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/aut
 import Dashboard from './Dashboard';
 import PaymentGenerator from './PaymentGenerator';
 import Appointments from './Appointments';
+import { countActiveClients, getSheetNames } from './services/googleSheetsService';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [clientCount, setClientCount] = useState<number | string>('-');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
@@ -32,6 +35,29 @@ const App: React.FC = () => {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const fetchClientCount = async () => {
+      if (accessToken) {
+        try {
+          const names = await getSheetNames(accessToken);
+          const now = new Date();
+          const months = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+          const currentMonthName = months[now.getMonth()];
+          const matchingSheet = names.find(n => n.toUpperCase().includes(currentMonthName)) || names[0];
+          
+          if (matchingSheet) {
+            const count = await countActiveClients(matchingSheet, accessToken);
+            setClientCount(count);
+          }
+        } catch (error) {
+          console.error("Erro ao buscar contagem de clientes:", error);
+        }
+      }
+    };
+
+    fetchClientCount();
+  }, [accessToken]);
 
   const handleLogin = async () => {
     try { await signInWithPopup(auth, googleProvider); } 
@@ -85,13 +111,10 @@ const App: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-12">
-            <div className="text-center p-2">
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Clientes</p>
-              <p className="text-3xl font-bold text-purple-500">80</p>
-            </div>
-            <div className="text-center p-2">
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Previsão</p>
-              <p className="text-sm font-bold text-gray-300">(PREVISÃO...)</p>
+            <div className="text-center p-2 col-span-2">
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Clientes Ativos</p>
+              <p className="text-3xl font-bold text-purple-500">{clientCount}</p>
+              {!accessToken && <p className="text-[8px] text-gray-600 mt-1">(Conecte em Agendamentos)</p>}
             </div>
           </div>
 
@@ -158,7 +181,7 @@ const App: React.FC = () => {
             </div>
           ) : activeTab === 'appointments' ? (
             <div className="animate-fadeIn">
-               <Appointments user={user} onBack={() => setActiveTab('dashboard')} />
+               <Appointments user={user} onBack={() => setActiveTab('dashboard')} onConnect={setAccessToken} />
             </div>
           ) : null}
         </div>
@@ -168,4 +191,5 @@ const App: React.FC = () => {
 };
 
 export default App;
+
 
