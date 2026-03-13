@@ -318,3 +318,4 @@ const Appointments: React.FC<AppointmentsProps> = ({ user }) => {
 };
 
 export default Appointments;
+
