@@ -27,9 +27,10 @@ declare var html2pdf: any;
 
 interface PaymentGeneratorProps {
   user: User | null;
+  onBack?: () => void;
 }
 
-const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user }) => {
+const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user, onBack }) => {
   const [data, setData] = useState<PaymentAuthData>(INITIAL_AUTH_DATA);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
@@ -283,12 +284,21 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user }) => {
 
   return (
     <div className="pb-20 transition-colors duration-300">
-      <nav className="bg-white dark:bg-zinc-800 border-b dark:border-zinc-700 shadow-sm p-4 sticky top-0 z-50 no-print mb-6 rounded-xl">
+      <nav className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b dark:border-zinc-800 p-6 sticky top-[-32px] lg:top-[-48px] -mx-8 lg:-mx-12 -mt-8 lg:-mt-12 z-50 no-print mb-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
+            {onBack && (
+              <button 
+                onClick={onBack}
+                className="text-gray-400 hover:text-indigo-500 transition-colors p-2 -ml-2"
+                title="Voltar ao Dashboard"
+              >
+                <i className="fas fa-arrow-left text-xl"></i>
+              </button>
+            )}
             <div className="flex items-center space-x-2">
               <i className="fas fa-file-invoice-dollar text-2xl text-indigo-600"></i>
-              <h1 className="text-xl font-bold tracking-tight dark:text-white">Gerador de Autorização</h1>
+              <h1 className="text-xl font-bold tracking-tight dark:text-white">Gerador</h1>
             </div>
             {user && (
               <div className="flex items-center space-x-3 no-print">
@@ -411,7 +421,7 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user }) => {
           </div>
         )}
 
-        {!showPreview ? (  
+        {!showPreview ? (
           <div className="space-y-6">
             <section className="bg-white dark:bg-zinc-800 p-6 rounded-xl shadow-sm border dark:border-zinc-700">
               <div className="flex items-center space-x-2 mb-4">
