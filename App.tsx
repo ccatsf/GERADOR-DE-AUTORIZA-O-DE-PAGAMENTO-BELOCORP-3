@@ -154,25 +154,11 @@ const App: React.FC = () => {
             <Dashboard user={user} onNavigate={setActiveTab} />
           ) : activeTab === 'payment' ? (
             <div className="animate-fadeIn">
-               <button 
-                 onClick={() => setActiveTab('dashboard')} 
-                 className="mb-6 flex items-center space-x-2 text-gray-500 hover:text-purple-600 font-bold uppercase text-xs tracking-widest transition-colors"
-               >
-                 <i className="fas fa-arrow-left"></i>
-                 <span>Voltar ao Dashboard</span>
-               </button>
-               <PaymentGenerator user={user} />
+               <PaymentGenerator user={user} onBack={() => setActiveTab('dashboard')} />
             </div>
           ) : activeTab === 'appointments' ? (
             <div className="animate-fadeIn">
-               <button 
-                 onClick={() => setActiveTab('dashboard')} 
-                 className="mb-6 flex items-center space-x-2 text-gray-500 hover:text-purple-600 font-bold uppercase text-xs tracking-widest transition-colors"
-               >
-                 <i className="fas fa-arrow-left"></i>
-                 <span>Voltar ao Dashboard</span>
-               </button>
-               <Appointments user={user} />
+               <Appointments user={user} onBack={() => setActiveTab('dashboard')} />
             </div>
           ) : null}
         </div>
@@ -182,3 +168,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
