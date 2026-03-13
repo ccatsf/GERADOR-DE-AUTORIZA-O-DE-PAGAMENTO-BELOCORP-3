@@ -68,7 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
             title="Agendamentos" 
             color="text-purple-600" 
             bgColor="bg-purple-50"
-            onClick={() => {}}
+            onClick={() => onNavigate('appointments')}
           />
         </div>
       </div>
@@ -173,3 +173,4 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ icon, title, color, bgColor
 );
 
 export default Dashboard;
+
