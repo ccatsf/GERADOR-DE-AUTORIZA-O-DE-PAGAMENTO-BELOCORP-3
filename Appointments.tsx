@@ -6,6 +6,7 @@ import { maskCurrency, parseCurrency } from './formatters';
 
 interface AppointmentsProps {
   user: User | null;
+  onBack?: () => void;
 }
 
 interface AppointmentDay {
@@ -16,7 +17,7 @@ interface AppointmentDay {
   available: boolean;
 }
 
-const Appointments: React.FC<AppointmentsProps> = ({ user }) => {
+const Appointments: React.FC<AppointmentsProps> = ({ user, onBack }) => {
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [currentSheet, setCurrentSheet] = useState<string>('');
   const [days, setDays] = useState<AppointmentDay[]>([]);
@@ -208,28 +209,45 @@ const Appointments: React.FC<AppointmentsProps> = ({ user }) => {
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-black text-gray-800 dark:text-white uppercase tracking-tight">Agendamentos de Cirurgias</h2>
-        <div className="flex items-center space-x-4">
-          <label className="text-xs font-bold text-gray-500 uppercase">Mês/Planilha:</label>
-          <select 
-            value={currentSheet}
-            onChange={(e) => setCurrentSheet(e.target.value)}
-            className="bg-white dark:bg-zinc-800 border dark:border-zinc-700 rounded-lg px-4 py-2 text-sm font-bold dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            {sheetNames.map(name => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
-          <button 
-            onClick={loadDays}
-            disabled={isLoading}
-            className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
-          >
-            <i className={`fas fa-sync-alt ${isLoading ? 'fa-spin' : ''}`}></i>
-          </button>
+      <nav className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b dark:border-zinc-800 p-6 sticky top-[-32px] lg:top-[-48px] -mx-8 lg:-mx-12 -mt-8 lg:-mt-12 z-50 no-print mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center space-x-6">
+            {onBack && (
+              <button 
+                onClick={onBack}
+                className="text-gray-400 hover:text-purple-500 transition-colors p-2 -ml-2"
+                title="Voltar ao Dashboard"
+              >
+                <i className="fas fa-arrow-left text-xl"></i>
+              </button>
+            )}
+            <div className="flex items-center space-x-2">
+              <i className="fas fa-calendar-alt text-2xl text-purple-600"></i>
+              <h1 className="text-xl font-bold tracking-tight dark:text-white">Agendamentos</h1>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <label className="text-xs font-bold text-gray-500 uppercase">Mês/Planilha:</label>
+            <select 
+              value={currentSheet}
+              onChange={(e) => setCurrentSheet(e.target.value)}
+              className="bg-gray-100 dark:bg-zinc-800 border-none rounded-xl px-4 py-2 text-sm font-bold dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              {sheetNames.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+            <button 
+              onClick={loadDays}
+              disabled={isLoading}
+              className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+            >
+              <i className={`fas fa-sync-alt ${isLoading ? 'fa-spin' : ''}`}></i>
+            </button>
+          </div>
         </div>
-      </div>
+      </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Lista de Dias Disponíveis */}
@@ -367,4 +385,5 @@ const Appointments: React.FC<AppointmentsProps> = ({ user }) => {
 };
 
 export default Appointments;
+
 
