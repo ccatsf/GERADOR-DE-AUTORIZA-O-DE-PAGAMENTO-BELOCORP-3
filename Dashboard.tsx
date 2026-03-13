@@ -1,6 +1,26 @@
 import React from 'react';
 import { User } from 'firebase/auth';
 
+interface ActivityCardProps {
+  icon: string;
+  title: string;
+  color: string;
+  bgColor: string;
+  onClick: () => void;
+}
+
+const ActivityCard: React.FC<ActivityCardProps> = ({ icon, title, color, bgColor, onClick }) => (
+  <button 
+    onClick={onClick}
+    className="bg-white dark:bg-zinc-800 p-6 rounded-3xl shadow-sm border dark:border-zinc-700 flex items-center space-x-4 hover:shadow-md transition-all group w-full text-left"
+  >
+    <div className={`${bgColor} ${color} p-4 rounded-2xl group-hover:scale-110 transition-transform`}>
+      <i className={`fas ${icon} text-xl`}></i>
+    </div>
+    <span className="font-bold text-gray-700 dark:text-gray-200 text-lg">{title}</span>
+  </button>
+);
+
 interface DashboardProps {
   user: User | null;
   onNavigate: (tab: string) => void;
@@ -26,7 +46,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
   ];
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-8 bg-red-500/10">
+      <h1 className="text-white bg-red-600 p-2">DASHBOARD COMPONENT OK</h1>
       {/* Banner Frase do Dia */}
       <div className="bg-purple-100 dark:bg-purple-900/30 p-8 rounded-3xl flex items-center space-x-6 relative overflow-hidden">
         <div className="bg-purple-600 text-white p-4 rounded-2xl z-10">
@@ -152,25 +173,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
   );
 };
 
-interface ActivityCardProps {
-  icon: string;
-  title: string;
-  color: string;
-  bgColor: string;
-  onClick: () => void;
-}
-
-const ActivityCard: React.FC<ActivityCardProps> = ({ icon, title, color, bgColor, onClick }) => (
-  <button 
-    onClick={onClick}
-    className="bg-white dark:bg-zinc-800 p-6 rounded-3xl shadow-sm border dark:border-zinc-700 flex items-center space-x-4 hover:shadow-md transition-all group w-full text-left"
-  >
-    <div className={`${bgColor} ${color} p-4 rounded-2xl group-hover:scale-110 transition-transform`}>
-      <i className={`fas ${icon} text-xl`}></i>
-    </div>
-    <span className="font-bold text-gray-700 dark:text-gray-200 text-lg">{title}</span>
-  </button>
-);
-
 export default Dashboard;
+
 
