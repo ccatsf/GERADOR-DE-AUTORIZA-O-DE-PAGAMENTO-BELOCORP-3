@@ -1,46 +1,12 @@
-import { findOrCreateFolder, uploadFileToDrive } from './src_services_googleDriveService_Version2';
-import React, { useState, useRef, useEffect } from 'react';
-import { PaymentAuthData, INITIAL_AUTH_DATA, Beneficiary } from './types';
-import { parsePaymentText } from './services/geminiService.ts';
-import PaymentForm from './PaymentForm.tsx';
-import DocumentPreview from './DocumentPreview.tsx';
-import { maskCurrency, parseCurrency } from './formatters.ts';
-import { auth, db, googleProvider } from './firebase.ts';
-import { signInWithPopup, signOut, onAuthStateChanged, User, GoogleAuthProvider } from 'firebase/auth';
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  getDocs, 
-  serverTimestamp, 
-  orderBy, 
-  doc, 
-  updateDoc, 
-  deleteDoc,
-  getDoc,
-  setDoc,
-  getDocFromServer
-} from 'firebase/firestore';
-
-// Declarando html2pdf para o TypeScript
-declare var html2pdf: any;
+import React, { useState, useEffect } from 'react';
+import { auth, googleProvider } from './firebase.ts';
+import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import Dashboard from './Dashboard.tsx';
+import PaymentGenerator from './PaymentGenerator.tsx';
 
 const App: React.FC = () => {
-  const [data, setData] = useState<PaymentAuthData>(INITIAL_AUTH_DATA);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isPdfLoading, setIsPdfLoading] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [activeTab, setActiveTab] = useState<'auth' | 'cover'>('auth');
   const [user, setUser] = useState<User | null>(null);
-  const [savedAuthorizations, setSavedAuthorizations] = useState<any[]>([]);
-  const [beneficiariesDirectory, setBeneficiariesDirectory] = useState<any[]>([]);
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showDirectory, setShowDirectory] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [currentDocId, setCurrentDocId] = useState<string | null>(null);
-  const [googleDriveToken, setGoogleDriveToken] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
@@ -48,7 +14,6 @@ const App: React.FC = () => {
     }
     return false;
   });
-  const previewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -61,62 +26,11 @@ const App: React.FC = () => {
   }, [isDarkMode]);
 
   useEffect(() => {
-    const testConnection = async () => {
-      try {
-        await getDocFromServer(doc(db, 'test', 'connection'));
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('the client is offline')) {
-          console.error("Please check your Firebase configuration.");
-        }
-      }
-    };
-    testConnection();
-  }, []);
-
-  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (currentUser) {
-        fetchHistory(currentUser.uid);
-        fetchBeneficiariesDirectory();
-      } else {
-        setSavedAuthorizations([]);
-      }
     });
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    const total = data.beneficiaries.reduce((acc, b) => acc + parseCurrency(b.amount), 0);
-    const formattedTotal = maskCurrency(Math.round(total * 100).toString());
-    
-    if (formattedTotal !== data.totalAmount) {
-      setData(prev => ({
-        ...prev,
-        totalAmount: formattedTotal,
-        paymentAmount: formattedTotal
-      }));
-    }
-  }, [data.beneficiaries]);
-
-  const handleUpdateData = (newData: Partial<PaymentAuthData>) => {
-    setData(prev => ({ ...prev, ...newData }));
-  };
-
-  const handleAddBeneficiary = () => {
-    setData(prev => ({
-      ...prev,
-      beneficiaries: [...prev.beneficiaries, { id: crypto.randomUUID(), name: '', pix: '', document: '', type: '', bank: '', agency: '', account: '', amount: '' }]
-    }));
-  };
-
-  const handleRemoveBeneficiary = (id: string) => {
-    setData(prev => ({ ...prev, beneficiaries: prev.beneficiaries.filter(b => b.id !== id) }));
-  };
-
-  const handleUpdateBeneficiary = (id: string, updates: Partial<Beneficiary>) => {
-    setData(prev => ({ ...prev, beneficiaries: prev.beneficiaries.map(b => (b.id === id ? { ...b, ...updates } : b)) }));
-  };
 
   const handleLogin = async () => {
     try { await signInWithPopup(auth, googleProvider); } 
@@ -124,394 +38,130 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    try { await signOut(auth); setCurrentDocId(null); setData(INITIAL_AUTH_DATA); } 
+    try { await signOut(auth); setActiveTab('dashboard'); } 
     catch (error) { console.error(error); }
   };
 
-  const fetchHistory = async (uid: string) => {
-    setIsHistoryLoading(true);
-    try {
-      const q = query(collection(db, 'authorizations'), where('uid', '==', uid), orderBy('updatedAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      setSavedAuthorizations(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    } finally { setIsHistoryLoading(false); }
-  };
-
-  const fetchBeneficiariesDirectory = async () => {
-    try {
-      const q = query(collection(db, 'beneficiaries_directory'), orderBy('name', 'asc'));
-      const querySnapshot = await getDocs(q);
-      setBeneficiariesDirectory(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    } catch (error) {
-      console.error("Erro ao carregar diretório:", error);
-    }
-  };
-  
-  // FUNÇÃO DE SALVAR ÚNICA E MELHORADA
-  const handleSave = async () => {
-    if (!user) { alert("Faça login para salvar."); return; }
-    
-    setIsSaving(true);
-    try {
-      let googleToken = googleDriveToken;
-
-      // 0. Tenta obter o token apenas se não tiver um ou se o salvamento falhar depois
-      if (!googleToken) {
-        console.log("Obtendo nova autorização do Google Drive...");
-        const provider = new GoogleAuthProvider();
-        provider.addScope('https://www.googleapis.com/auth/drive.file');
-        const result = await signInWithPopup(auth, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        googleToken = credential?.accessToken || null;
-        
-        if (googleToken) {
-          setGoogleDriveToken(googleToken); // Guarda o token para o próximo salvamento
-        }
-      }
-
-      if (!googleToken) {
-        throw new Error("Não foi possível obter acesso ao Google Drive. Verifique se as janelas pop-up estão liberadas.");
-      }
-
-      const payload = { ...data, uid: user.uid, updatedAt: serverTimestamp() };
-
-      // 1. Salva no Firebase (Histórico)
-      if (currentDocId) {
-        await updateDoc(doc(db, 'authorizations', currentDocId), payload);
-      } else {
-        const docRef = await addDoc(collection(db, 'authorizations'), { ...payload, createdAt: serverTimestamp() });
-        setCurrentDocId(docRef.id);
-      }
-      
-      const element = document.getElementById('autorizacao-documento');
-      
-      if (element) {
-        const pdfBlob = await html2pdf().set({
-          margin: 10,
-          filename: `Autorizacao_${data.clientName}.pdf`,
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        }).from(element).outputPdf('blob');
-
-        // 1. Verificar se o usuário já tem uma pasta vinculada no Firestore
-        const userRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
-        let folderId = userDoc.exists() ? userDoc.data().driveFolderId : null;
-
-        if (!folderId) {
-          // 2. Se não tiver ID salvo, busca pelo e-mail ou cria uma nova
-          const userEmail = user.email;
-          if (!userEmail) throw new Error("E-mail não identificado.");
-          
-          console.log("Vínculo de pasta não encontrado no sistema. Buscando no Drive...");
-          folderId = await findOrCreateFolder(userEmail, googleToken);
-          
-          // 3. Salva o ID da pasta no Firestore para nunca mais precisar buscar pelo nome
-          await setDoc(userRef, { driveFolderId: folderId }, { merge: true });
-          console.log("ID da pasta vinculado ao seu usuário com sucesso!");
-        }
-
-        // 4. Envia o arquivo para a pasta vinculada (pode renomear no Drive à vontade!)
-        try {
-          await uploadFileToDrive(
-            `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
-            pdfBlob,
-            folderId,
-            googleToken
-          );
-        } catch (driveError: any) {
-          console.warn("Falha ao salvar na pasta específica, tentando na raiz:", driveError);
-          await uploadFileToDrive(
-            `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
-            pdfBlob,
-            undefined,
-            googleToken
-          );
-        }
-        alert("✅ Salvo no sistema e enviado para sua pasta no Google Drive!");
-      } else {
-        // Se o elemento não for encontrado, ele salva apenas no sistema
-        alert("✅ Salvo no sistema! (Abra 'Ver Documento' para enviar ao Drive)");
-      }
-
-      await fetchHistory(user.uid);
-
-      // 5. Atualizar Diretório de Beneficiários (Alimentar o banco de dados)
-      try {
-        const batch = data.beneficiaries.map(async (b) => {
-          if (!b.name) return; // Só salva se tiver nome
-          
-          // O ID do documento no diretório será o nome normalizado para evitar duplicatas básicas
-          const beneficiaryId = b.document.replace(/\D/g, '') || b.name.toLowerCase().trim().replace(/\s+/g, '_');
-          const beneficiaryRef = doc(db, 'beneficiaries_directory', beneficiaryId);
-          
-          // Prepara os dados para salvar (remove o ID interno do formulário)
-          const { id, amount, ...directoryData } = b;
-          
-          await setDoc(beneficiaryRef, {
-            ...directoryData,
-            updatedAt: serverTimestamp(),
-            lastUsedBy: user.uid
-          }, { merge: true });
-        });
-        await Promise.all(batch);
-      } catch (err) {
-        console.warn("Aviso: Falha ao atualizar diretório de beneficiários:", err);
-      }
-
-    } catch (error: any) {
-      console.error("Erro no Drive:", error);
-      
-      // Se for um erro de autorização, limpa o token para pedir novamente no próximo clique
-      if (error.message?.includes('401') || error.message?.includes('auth') || error.message?.includes('permission')) {
-        setGoogleDriveToken(null);
-      }
-      
-      alert(`Erro ao salvar: ${error.message || "Verifique a conexão com o Google."}`);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-  const handleLoadDoc = (savedDoc: any) => {
-    const { id, uid, createdAt, updatedAt, ...docData } = savedDoc;
-    setData(docData);
-    setCurrentDocId(id);
-    setShowHistory(false);
-    setShowPreview(false);
-  };
-
-  const handleDeleteDoc = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!window.confirm("Excluir documento?")) return;
-    try {
-      await deleteDoc(doc(db, 'authorizations', id));
-      if (currentDocId === id) { setCurrentDocId(null); setData(INITIAL_AUTH_DATA); }
-      if (user) fetchHistory(user.uid);
-    } catch (error) { alert("Erro ao excluir."); }
-  };
-
-  const handleAiFill = async (text: string) => {
-    if (!text.trim()) return;
-    setIsAiLoading(true);
-    try {
-      const parsed = await parsePaymentText(text);
-      setData(prev => ({
-        ...prev, ...parsed,
-        beneficiaries: (parsed as any).beneficiaries?.map((b: any, i: number) => ({ ...b, id: prev.beneficiaries[i]?.id || crypto.randomUUID() })) || prev.beneficiaries
-      }));
-    } finally { setIsAiLoading(false); }
-  };
-
-  const handleDeleteBeneficiary = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!window.confirm("Excluir este beneficiário da base de dados?")) return;
-    try {
-      await deleteDoc(doc(db, 'beneficiaries_directory', id));
-      fetchBeneficiariesDirectory();
-    } catch (error) {
-      alert("Erro ao excluir beneficiário.");
-    }
-  };
-
-  const handleUseBeneficiary = (beneficiary: any) => {
-    // Adiciona o beneficiário ao formulário atual
-    const newBeneficiary: Beneficiary = {
-      id: crypto.randomUUID(),
-      name: beneficiary.name,
-      pix: beneficiary.pix || '',
-      document: beneficiary.document || '',
-      type: beneficiary.type || '',
-      bank: beneficiary.bank || '',
-      agency: beneficiary.agency || '',
-      account: beneficiary.account || '',
-      amount: ''
-    };
-
-    setData(prev => ({
-      ...prev,
-      beneficiaries: [...prev.beneficiaries, newBeneficiary]
-    }));
-    setShowDirectory(false);
-    alert(`${beneficiary.name} adicionado ao formulário!`);
-  };
-
-  const handleDownloadPdf = async (elementId: string, suffix: string) => {
-    const element = document.getElementById(elementId);
-    if (!element) return;
-    setIsPdfLoading(true);
-    try {
-      const opt = { margin: 0, filename: `${suffix}_${data.clientName.replace(/\s+/g, '_')}.pdf`, html2canvas: { scale: 3, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
-      await html2pdf().set(opt).from(element).save();
-    } finally { setIsPdfLoading(false); }
-  };
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-zinc-950 p-4 transition-colors duration-300">
+        <div className="bg-white dark:bg-zinc-900 p-10 rounded-3xl shadow-2xl max-w-md w-full text-center border dark:border-zinc-800 animate-fadeIn">
+          <div className="bg-indigo-600 text-white w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg">
+            <i className="fas fa-user-shield text-4xl"></i>
+          </div>
+          <h1 className="text-3xl font-black text-gray-800 dark:text-white mb-2 uppercase tracking-tight">ADM BELOCORP</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-10 text-lg">Sistema Administrativo Interno</p>
+          <button 
+            onClick={handleLogin} 
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition-all shadow-xl hover:shadow-indigo-500/20 flex items-center justify-center space-x-3 transform hover:-translate-y-1"
+          >
+            <i className="fab fa-google text-xl"></i>
+            <span>ENTRAR COM GOOGLE</span>
+          </button>
+          <p className="mt-8 text-xs text-gray-400 uppercase tracking-widest font-bold">Acesso restrito a colaboradores</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen pb-20 bg-gray-100 dark:bg-zinc-900 transition-colors duration-300">
-      <nav className="bg-indigo-700 dark:bg-indigo-900 text-white shadow-lg p-4 sticky top-0 z-50 no-print">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <i className="fas fa-file-invoice-dollar text-2xl"></i>
-              <h1 className="text-xl font-bold tracking-tight">Gerador de Autorização</h1>
+    <div className="flex min-h-screen bg-gray-50 dark:bg-zinc-950 transition-colors duration-300 overflow-hidden">
+      {/* Sidebar - Dark fixed sidebar */}
+      <aside className="w-80 bg-black text-white p-8 flex flex-col justify-between hidden lg:flex">
+        <div>
+          <h1 className="text-xs font-bold tracking-[0.2em] mb-12 uppercase text-gray-400">ADM BELOCORP</h1>
+          
+          <div className="flex flex-col items-center mb-10">
+            <div className="relative mb-4 group">
+              <img 
+                src={user.photoURL || 'https://via.placeholder.com/150'} 
+                alt="Profile" 
+                className="w-32 h-32 rounded-full border-4 border-zinc-800 object-cover group-hover:border-purple-500 transition-colors"
+              />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/40 to-transparent"></div>
             </div>
-            {user && (
-              <div className="flex items-center space-x-3 no-print">
-                <button 
-                  onClick={() => setShowDirectory(true)} 
-                  className="text-indigo-200 hover:text-white transition text-sm flex items-center space-x-1"
-                  title="Ver base de dados de beneficiários"
-                >
-                  <i className="fas fa-address-book"></i>
-                  <span className="hidden md:inline">Beneficiários</span>
-                </button>
-
-                <button onClick={() => setShowHistory(!showHistory)} className="text-indigo-200 hover:text-white transition text-sm flex items-center space-x-1">
-                  <i className="fas fa-history"></i>
-                  <span>Meus Salvos</span>
-                </button>
-              </div>
-            )}
+            <h2 className="text-xl font-bold uppercase tracking-wide text-center">{user.displayName || 'Usuário'}</h2>
           </div>
-          <div className="flex flex-wrap justify-center gap-2 items-center">
-            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded-lg bg-indigo-600 dark:bg-indigo-800 hover:bg-indigo-500 transition-colors mr-2">
-              <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'}`}></i>
-            </button>
 
-            {user ? (
-              <div className="flex items-center space-x-3 mr-2">
-                <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full border-2 border-indigo-400" />
-                <button onClick={handleLogout} className="text-xs text-indigo-200 hover:text-white underline">Sair</button>
-              </div>
-            ) : (
-              <button onClick={handleLogin} className="bg-white text-indigo-700 hover:bg-indigo-50 px-4 py-2 rounded-lg transition font-bold text-sm flex items-center space-x-2">
-                <i className="fab fa-google"></i>
-                <span>Entrar com Google</span>
-              </button>
-            )}
+          <div className="grid grid-cols-2 gap-4 mb-12">
+            <div className="text-center p-2">
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Clientes</p>
+              <p className="text-3xl font-bold text-purple-500">80</p>
+            </div>
+            <div className="text-center p-2">
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Previsão</p>
+              <p className="text-sm font-bold text-gray-300">(PREVISÃO...)</p>
+            </div>
+          </div>
 
-            {user && (
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className={`bg-indigo-500 hover:bg-indigo-400 px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2 ${isSaving ? 'opacity-70' : ''}`}
-              >
-                <i className={`fas ${isSaving ? 'fa-spinner fa-spin' : 'fa-save'}`}></i>
-                <span>{currentDocId ? 'Atualizar' : 'Salvar'}</span>
-              </button>
-            )}
-
-            <button onClick={() => setShowPreview(!showPreview)} className="bg-indigo-600 hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400 px-4 py-2 rounded-lg transition font-medium flex items-center space-x-2">
-              <i className={`fas ${showPreview ? 'fa-edit' : 'fa-eye'}`}></i>
-              <span>{showPreview ? 'Editar Dados' : 'Ver Documento'}</span>
-            </button>
+          {/* Mini Calendário na Sidebar */}
+          <div className="bg-zinc-900/50 rounded-3xl p-6 border border-zinc-800">
+             <div className="grid grid-cols-7 gap-1 text-center text-[8px] font-bold text-gray-500 mb-4">
+                {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'].map(d => <span key={d}>{d}</span>)}
+             </div>
+             <div className="grid grid-cols-7 gap-1 text-center">
+                {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                  <span 
+                    key={day} 
+                    className={`text-[10px] py-1 rounded-lg ${day === 13 ? 'bg-purple-600 text-white font-bold' : 'text-gray-400'}`}
+                  >
+                    {day}
+                  </span>
+                ))}
+             </div>
           </div>
         </div>
-      </nav>
 
-      <main className={`${showPreview ? '' : 'max-w-5xl mx-auto px-4 mt-8'}`}>
-        {showHistory && user && (
-          <div className="fixed inset-0 bg-black/50 z-[60] flex justify-end no-print" onClick={() => setShowHistory(false)}>
-            <div className="bg-white dark:bg-zinc-800 w-full max-w-md h-full shadow-2xl p-6 overflow-y-auto" onClick={e => e.stopPropagation()}>
-              <h2 className="text-xl font-bold mb-6 border-b pb-4 dark:text-white">Documentos Salvos</h2>
-              <div className="space-y-3">
-                {savedAuthorizations.map((doc) => (
-                  <div key={doc.id} onClick={() => handleLoadDoc(doc)} className="p-4 rounded-xl border dark:border-zinc-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-700 flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold dark:text-white">{doc.clientName}</h3>
-                      <p className="text-xs text-gray-500">{doc.totalAmount}</p>
-                    </div>
-                    <button onClick={(e) => handleDeleteDoc(doc.id, e)} className="text-red-400 hover:text-red-600"><i className="fas fa-trash-alt"></i></button>
-                  </div>
-                ))}
-              </div>
+        <button 
+          onClick={handleLogout}
+          className="flex items-center space-x-3 text-gray-500 hover:text-white transition-colors group font-bold text-sm"
+        >
+          <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-500 transition-all">
+            <i className="fas fa-sign-out-alt"></i>
+          </div>
+          <span className="uppercase tracking-widest">Sair</span>
+        </button>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Header */}
+        <header className="h-24 bg-black lg:bg-transparent flex items-center justify-between px-8 lg:px-12 z-40">
+          <div className="lg:hidden">
+             <h1 className="text-white text-xs font-bold tracking-widest">ADM BELOCORP</h1>
+          </div>
+          <h2 className="text-white lg:text-black dark:lg:text-white text-xl font-black uppercase tracking-[0.3em] mx-auto lg:ml-0 lg:mr-auto">DASHBOARD</h2>
+          <div className="flex items-center space-x-6">
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className="text-gray-400 hover:text-purple-500 transition-colors">
+              <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'} text-xl`}></i>
+            </button>
+            <div className="relative cursor-pointer group">
+              <i className="fas fa-bell text-gray-400 text-xl group-hover:text-purple-500 transition-colors"></i>
+              <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-[8px] font-bold px-1 rounded-full border-2 border-black lg:border-gray-50 dark:lg:border-zinc-950">2</span>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-zinc-800 lg:bg-zinc-200 dark:lg:bg-zinc-800 flex items-center justify-center cursor-pointer border-2 border-transparent hover:border-purple-500 transition-all overflow-hidden">
+              <img src={user.photoURL || ''} alt="" className="w-full h-full object-cover" />
             </div>
           </div>
-        )}
+        </header>
 
-        {showDirectory && user && (
-          <div className="fixed inset-0 bg-black/50 z-[70] flex justify-center items-center p-4 no-print" onClick={() => setShowDirectory(false)}>
-            <div className="bg-white dark:bg-zinc-800 w-full max-w-4xl max-h-[90vh] shadow-2xl rounded-2xl p-6 overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-6 border-b pb-4 dark:border-zinc-700">
-                <h2 className="text-xl font-bold dark:text-white flex items-center">
-                  <i className="fas fa-address-book mr-3 text-indigo-500"></i>
-                  Base de Dados de Beneficiários
-                </h2>
-                <button onClick={() => setShowDirectory(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white">
-                  <i className="fas fa-times text-xl"></i>
-                </button>
-              </div>
-
-              <div className="overflow-y-auto flex-1 pr-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {beneficiariesDirectory.length > 0 ? (
-                    beneficiariesDirectory.map((b) => (
-                      <div 
-                        key={b.id} 
-                        className="p-4 rounded-xl border dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50 hover:border-indigo-500 dark:hover:border-indigo-400 transition-all group"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="font-bold text-gray-800 dark:text-white uppercase text-sm">{b.name}</h3>
-                            <p className="text-[10px] text-indigo-500 font-bold">{b.document}</p>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button 
-                              onClick={() => handleUseBeneficiary(b)}
-                              className="text-indigo-500 hover:text-indigo-600 p-1 bg-white dark:bg-zinc-800 rounded shadow-sm"
-                              title="Adicionar ao formulário"
-                            >
-                              <i className="fas fa-plus"></i>
-                            </button>
-                            <button 
-                              onClick={(e) => handleDeleteBeneficiary(b.id, e)} 
-                              className="text-red-400 hover:text-red-600 p-1 bg-white dark:bg-zinc-800 rounded shadow-sm"
-                              title="Excluir da base"
-                            >
-                              <i className="fas fa-trash-alt"></i>
-                            </button>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-gray-500 dark:text-zinc-400">
-                          <div><span className="font-semibold">Banco:</span> {b.bank}</div>
-                          <div><span className="font-semibold">Tipo:</span> {b.type}</div>
-                          <div><span className="font-semibold">Ag:</span> {b.agency}</div>
-                          <div><span className="font-semibold">CC:</span> {b.account}</div>
-                          <div className="col-span-2 mt-1 truncate"><span className="font-semibold">PIX:</span> {b.pix}</div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="col-span-full text-center py-10 text-gray-400">
-                      Nenhum beneficiário salvo na base de dados ainda.
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="mt-6 pt-4 border-t dark:border-zinc-700 text-center text-xs text-gray-400 italic">
-                Os dados nesta base são compartilhados entre todos os usuários autorizados.
-              </div>
+        {/* Dynamic Content */}
+        <div className="flex-1 overflow-y-auto p-8 lg:p-12">
+          {activeTab === 'dashboard' ? (
+            <Dashboard user={user} onNavigate={setActiveTab} />
+          ) : activeTab === 'payment' ? (
+            <div className="animate-fadeIn">
+               <button 
+                 onClick={() => setActiveTab('dashboard')} 
+                 className="mb-6 flex items-center space-x-2 text-gray-500 hover:text-purple-600 font-bold uppercase text-xs tracking-widest transition-colors"
+               >
+                 <i className="fas fa-arrow-left"></i>
+                 <span>Voltar ao Dashboard</span>
+               </button>
+               <PaymentGenerator user={user} />
             </div>
-          </div>
-        )}
-
-        {!showPreview ? (
-          <div className="space-y-6">
-            <section className="bg-white dark:bg-zinc-800 p-6 rounded-xl shadow-sm border dark:border-zinc-700">
-              <textarea placeholder="Cole o texto aqui..." className="w-full h-24 p-4 border dark:border-zinc-700 dark:bg-zinc-900 rounded-lg outline-none dark:text-white" onBlur={(e) => handleAiFill(e.target.value)}></textarea>
-            </section>
-            <PaymentForm data={data} activeTab={activeTab} onUpdate={handleUpdateData} onAddBeneficiary={handleAddBeneficiary} onRemoveBeneficiary={handleRemoveBeneficiary} onUpdateBeneficiary={handleUpdateBeneficiary} />
-          </div>
-        ) : (
-          <div className="relative">
-            {isPdfLoading && <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center"><div className="animate-spin w-10 h-10 border-4 border-white border-t-transparent rounded-full"></div></div>}
-            <div className="flex justify-center gap-4 mb-4 no-print">
-               <button onClick={() => handleDownloadPdf('capa-documento', 'Capa')} className="bg-blue-600 text-white px-4 py-2 rounded-lg">Baixar Capa</button>
-               <button onClick={() => handleDownloadPdf('autorizacao-documento', 'Autorizacao')} className="bg-green-600 text-white px-4 py-2 rounded-lg">Baixar Autorização</button>
-            </div>
-            <DocumentPreview data={data} ref={previewRef} onUpdate={handleUpdateData} onUpdateBeneficiary={handleUpdateBeneficiary} />
-          </div>
-        )}
+          ) : null}
+        </div>
       </main>
     </div>
   );
