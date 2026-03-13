@@ -92,7 +92,7 @@ export const getSheetNames = async (accessToken?: string): Promise<string[]> => 
   if (!token) throw new Error("Não foi possível obter acesso ao Google Sheets.");
 
   const response = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?fields=sheets.properties.title`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?fields=sheets(properties(title))`,
     {
       headers: {
         Authorization: `Bearer ${token}`
@@ -104,6 +104,11 @@ export const getSheetNames = async (accessToken?: string): Promise<string[]> => 
     const errorData = await response.json();
     throw new Error(`Erro ao buscar nomes das abas: ${errorData.error?.message || response.statusText}`);
   }
+
+  const data = await response.json();
+  return data.sheets.map((s: any) => s.properties.title);
+};
+
 
   const data = await response.json();
   return data.sheets.map((s: any) => s.properties.title);
