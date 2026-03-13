@@ -1,69 +1,29 @@
-export type Id = string;
 
-export interface Label {
-  id: Id;
-  text: string;
-  color: string;
-}
-
-export interface ChecklistItem {
-  id: Id;
-  text: string;
-  isCompleted: boolean;
-}
-
-export interface Checklist {
-  id: Id;
-  title: string;
-  items: ChecklistItem[];
-}
-
-export interface CardType {
-  id: Id;
-  listId: Id;
-  title: string;
-  description: string;
-  labels: Label[];
-  checklists: Checklist[];
-  images: string[];
-  isDone: boolean;
-  createdAt: number;
-  dueDate?: string;
-  planValue?: string;
-  cardColor?: string;
-}
-
-export interface ListType {
-  id: Id;
-  title: string;
-  theme?: string;
-}
-
-export interface DragItem {
-  id: Id;
-  type: 'CARD' | 'BOARD';
-  listId?: Id;
-}
-
-export interface ChecklistTemplate {
+export interface Beneficiary {
   id: string;
-  title: string;
-  items: string[];
+  name: string;
+  pix: string;
+  document: string; // CPF/CNPJ
+  type: string;
+  bank: string;
+  agency: string;
+  account: string;
+  amount: string;
 }
 
-export interface QueueItem {
-  id: string;
-  text: string; // Título rápido (ex: Marido da Joana)
-  isDone: boolean;
-  fullName?: string;
-  cpf?: string;
-  profession?: string;
-  relationship?: string;
-  phone?: string;
-  email?: string;
+export interface PaymentAuthData {
+  clientName: string;
+  clientCpf: string;
+  contractNumber: string;
+  totalAmount: string;
+  // Novos campos para a Capa
+  isContractAdditive: 'sim' | 'nao' | '';
+  needsGuarantor: 'sim' | 'nao' | '';
+  doctorName: string;
+  paymentAmount: string; // Valor específico que aparece na capa como "Valor a pagar"
+  beneficiaries: Beneficiary[];
 }
 
-export interface Workspace {
   id: string;
   name: string;
   createdAt: number;
