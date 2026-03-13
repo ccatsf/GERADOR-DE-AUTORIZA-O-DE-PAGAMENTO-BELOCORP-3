@@ -4,6 +4,7 @@ import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/aut
 import Dashboard from './Dashboard';
 import PaymentGenerator from './PaymentGenerator';
 import Appointments from './Appointments';
+import CRM from './CRM_System/CRM';
 import { countActiveClients, getSheetNames } from './services/googleSheetsService';
 
 const App: React.FC = () => {
@@ -155,7 +156,7 @@ const App: React.FC = () => {
              <h1 className="text-white text-xs font-bold tracking-widest">ADM BELOCORP</h1>
           </div>
           <h2 className="text-white lg:text-black dark:lg:text-white text-xl font-black uppercase tracking-[0.3em] mx-auto lg:ml-0 lg:mr-auto">
-            {activeTab === 'dashboard' ? 'DASHBOARD' : activeTab === 'payment' ? 'GERADOR' : 'AGENDAMENTOS'}
+            {activeTab === 'dashboard' ? 'DASHBOARD' : activeTab === 'payment' ? 'GERADOR' : activeTab === 'appointments' ? 'AGENDAMENTOS' : 'CRM'}
           </h2>
           <div className="flex items-center space-x-6">
             <button onClick={() => setIsDarkMode(!isDarkMode)} className="text-gray-400 hover:text-purple-500 transition-colors">
