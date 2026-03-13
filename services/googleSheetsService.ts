@@ -1,7 +1,7 @@
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from './firebase';
 
-const SPREADSHEET_ID = '1cGmomn3kLikEwlwjKsKLEONOt2A3nFQI3jrVXsYqn70';
+const SPREADSHEET_ID = '1cGmomn3kLikEwlwjKsKLEONOt2A3nFQI3jrVXsyqn70';
 
 export interface SheetRow {
   tipoDePg: string;
