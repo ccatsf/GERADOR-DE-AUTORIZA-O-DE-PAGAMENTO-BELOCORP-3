@@ -221,7 +221,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
                 title="CRM - Captação de Docs" 
                 color="text-purple-600" 
                 bgColor="bg-purple-50"
-                onClick={() => {}}
+                onClick={() => onNavigate('crm')}
               />
               <ActivityCard 
                 icon="fa-shield-alt" 
