@@ -6,7 +6,6 @@ import {
   addDoc, 
   query, 
   where, 
-  getDocs, 
   serverTimestamp, 
   orderBy, 
   doc, 
@@ -129,10 +128,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
         </div>
       </div>
 
-      {/* Atividades e Calendário */}
+      {/* Grid Principal: Afazeres + Atividades (Esquerda) e Calendário (Direita) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Lista de Afazeres (Estilo Fiel à Foto) */}
-        <div className="lg:col-span-2">
+        
+        {/* Coluna da Esquerda (Afazeres e Atividades) */}
+        <div className="lg:col-span-2 space-y-12">
+          
+          {/* Lista de Afazeres */}
           <div className="bg-gray-50/50 dark:bg-zinc-900/30 p-8 rounded-[40px] border border-gray-100 dark:border-zinc-800">
             <div className="flex justify-between items-center mb-10">
               <h3 className="text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest text-sm">Lista de Afazeres Diários</h3>
@@ -198,8 +200,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
             </div>
           </div>
 
-          {/* Cards de Atividades integrados abaixo da lista */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-12">
+          {/* Cards de Atividades */}
+          <div className="space-y-6">
+            <h3 className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-sm">Atividades</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ActivityCard 
                 icon="fa-file-alt" 
                 title="CRM - Captação de Docs" 
@@ -225,7 +229,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
           </div>
         </div>
 
-        {/* Calendário do Próximo Mês */}
+        {/* Coluna da Direita (Calendário) */}
         <div className="lg:col-span-1">
           <h3 className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-sm mb-6">Calendário</h3>
           <div className="bg-white dark:bg-zinc-800 p-6 rounded-3xl shadow-sm border dark:border-zinc-700">
@@ -259,6 +263,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
