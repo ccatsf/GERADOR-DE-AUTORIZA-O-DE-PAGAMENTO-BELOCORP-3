@@ -1,5 +1,5 @@
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from './firebase';
+import { auth } from '../firebase';
 
 const SPREADSHEET_ID = '1cGmomn3kLikEwlwjKsKLEONOt2A3nFQI3jrVXsYqn70';
 
@@ -108,3 +108,4 @@ export const getSheetNames = async (accessToken?: string): Promise<string[]> => 
   const data = await response.json();
   return data.sheets.map((s: any) => s.properties.title);
 };
+
