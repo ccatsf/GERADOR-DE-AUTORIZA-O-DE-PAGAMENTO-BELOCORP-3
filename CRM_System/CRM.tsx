@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { CardType, ListType, Id, DragItem, QueueItem, Label, Workspace } from './types';
 import { INITIAL_LISTS, INITIAL_CARDS, DEFAULT_LABELS, generateId } from './constants';
-import { SearchIcon, HeartIcon, PlusIcon, DocumentTextIcon, XIcon, BellIcon, SunIcon, MoonIcon, UndoIcon, RedoIcon, ClipboardListIcon, ChevronUpIcon, ChevronDownIcon, ChevronRightIcon, CheckSquareIcon, TrashIcon, ImageIcon, MenuIcon, PencilIcon, ChartPieIcon } from './components/Icons';
+import { SearchIcon, HeartIcon, PlusIcon, DocumentTextIcon, XIcon, BellIcon, SunIcon, MoonIcon, UndoIcon, RedoIcon, ClipboardListIcon, ChevronUpIcon, ChevronDownIcon, ChevronRightIcon, ChevronLeftIcon, CheckSquareIcon, TrashIcon, ImageIcon, MenuIcon, PencilIcon, ChartPieIcon } from './components/Icons';
 import KanbanColumn from './components/KanbanColumn';
 import CardDetailsModal from './components/CardDetailsModal';
 
