@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, googleProvider } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import Dashboard from './Dashboard';
+import { Dashboard } from './Dashboard';
 import PaymentGenerator from './PaymentGenerator';
 import Appointments from './Appointments';
 import CRM from './CRM_System/CRM';
@@ -184,6 +184,8 @@ const App: React.FC = () => {
             <div className="animate-fadeIn">
                <Appointments user={user} onBack={() => setActiveTab('dashboard')} onConnect={setAccessToken} />
             </div>
+          ) : activeTab === 'crm' ? (
+            <CRM onBack={() => setActiveTab('dashboard')} />
           ) : null}
         </div>
       </main>
