@@ -149,13 +149,13 @@ const Appointments: React.FC<AppointmentsProps> = ({ user }) => {
       const dayOfWeek = daysOfWeek[dateObj.getDay()];
 
       const row = [
-        newAppointment.type,
-        newAppointment.surgeryDate,
-        newAppointment.paymentDate,
-        dayOfWeek,
-        maskCurrency((parseCurrency(newAppointment.planValue) * 100).toString()),
-        newAppointment.clientName.toUpperCase(),
-        'A PAGAR'
+        newAppointment.type, // Coluna A (TIPO DE PG)
+        newAppointment.surgeryDate, // Coluna B (CIRURGIA)
+        newAppointment.paymentDate, // Coluna C (PAGAMENTO)
+        dayOfWeek, // Coluna D (DIA)
+        maskCurrency((parseCurrency(newAppointment.planValue) * 100).toString()), // Coluna E (VALOR)
+        newAppointment.clientName.toUpperCase(), // Coluna F (CLIENTE)
+        'A PAGAR' // Coluna G (STATUS)
       ];
 
       await addRowToSpreadsheet(currentSheet, row, accessToken);
@@ -367,3 +367,4 @@ const Appointments: React.FC<AppointmentsProps> = ({ user }) => {
 };
 
 export default Appointments;
+
