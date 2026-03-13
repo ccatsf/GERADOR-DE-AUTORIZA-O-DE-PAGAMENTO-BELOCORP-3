@@ -411,7 +411,7 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user }) => {
           </div>
         )}
 
-        {!showPreview ? (
+        {!showPreview ? (  
           <div className="space-y-6">
             <section className="bg-white dark:bg-zinc-800 p-6 rounded-xl shadow-sm border dark:border-zinc-700">
               <div className="flex items-center space-x-2 mb-4">
