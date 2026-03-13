@@ -57,7 +57,6 @@ export const addRowToSpreadsheet = async (sheetName: string, rowData: string[], 
 
   if (!token) throw new Error("Não foi possível obter acesso ao Google Sheets.");
 
-  // Find the first empty row in columns B-G (or just append)
   const response = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A:G:append?valueInputOption=USER_ENTERED`,
     {
@@ -106,10 +105,6 @@ export const getSheetNames = async (accessToken?: string): Promise<string[]> => 
   }
 
   const data = await response.json();
-  return data.sheets.map((s: any) => s.properties.title);
-};
-
-
-  const data = await response.json();
+  if (!data.sheets) return [];
   return data.sheets.map((s: any) => s.properties.title);
 };
