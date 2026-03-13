@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '../firebase';
-import { getSpreadsheetData, addRowToSpreadsheet, getSheetNames } from '../services/googleSheetsService';
-import { maskCurrency, parseCurrency } from '../formatters';
+import { auth } from './firebase';
+import { getSpreadsheetData, addRowToSpreadsheet, getSheetNames } from './services/googleSheetsService';
+import { maskCurrency, parseCurrency } from './formatters';
 
 interface AppointmentsProps {
   user: User | null;
@@ -33,38 +33,38 @@ const Appointments: React.FC<AppointmentsProps> = ({ user }) => {
     type: 'PAGAMENTO'
   });
 
+  const handleConnect = async () => {
+    try {
+      setIsLoading(true);
+      const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/spreadsheets');
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken || null;
+      setAccessToken(token);
+
+      if (token) {
+        const names = await getSheetNames(token);
+        setSheetNames(names);
+        
+        const now = new Date();
+        const months = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+        const currentMonthName = months[now.getMonth()];
+        const matchingSheet = names.find(n => n.toUpperCase().includes(currentMonthName)) || names[0];
+        setCurrentSheet(matchingSheet);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar abas:", err);
+      alert("Erro ao conectar com Google Sheets.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const MAX_LIMIT_PER_DAY = 70000;
 
   useEffect(() => {
-    const fetchSheets = async () => {
-      try {
-        setIsLoading(true);
-        const provider = new GoogleAuthProvider();
-        provider.addScope('https://www.googleapis.com/auth/spreadsheets');
-        const result = await signInWithPopup(auth, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        const token = credential?.accessToken || null;
-        setAccessToken(token);
-
-        if (token) {
-          const names = await getSheetNames(token);
-          setSheetNames(names);
-          
-          // Tenta encontrar a aba do mês atual (ex: "MAIO")
-          const now = new Date();
-          const months = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
-          const currentMonthName = months[now.getMonth()];
-          const matchingSheet = names.find(n => n.toUpperCase().includes(currentMonthName)) || names[0];
-          setCurrentSheet(matchingSheet);
-        }
-      } catch (err) {
-        console.error("Erro ao carregar abas:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSheets();
+    // No automatic fetch on mount to avoid blank screen and blocked popups
   }, []);
 
   useEffect(() => {
@@ -156,6 +156,36 @@ const Appointments: React.FC<AppointmentsProps> = ({ user }) => {
       setIsSaving(false);
     }
   };
+
+  if (!accessToken) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 animate-fadeIn">
+        <div className="bg-white dark:bg-zinc-800 p-12 rounded-[40px] shadow-2xl border dark:border-zinc-700 text-center max-w-lg w-full">
+          <div className="bg-purple-100 dark:bg-purple-900/30 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8">
+            <i className="fas fa-file-excel text-4xl text-purple-600"></i>
+          </div>
+          <h2 className="text-2xl font-black dark:text-white mb-4 uppercase tracking-tight">Conectar Planilha</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-10 leading-relaxed">
+            Para visualizar e realizar novos agendamentos, precisamos acessar a planilha do Google Sheets.
+          </p>
+          <button 
+            onClick={handleConnect}
+            disabled={isLoading}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-5 rounded-2xl shadow-xl shadow-purple-500/20 transition-all transform hover:-translate-y-1 flex items-center justify-center space-x-3"
+          >
+            {isLoading ? (
+              <i className="fas fa-spinner fa-spin text-xl"></i>
+            ) : (
+              <>
+                <i className="fab fa-google text-xl"></i>
+                <span className="uppercase tracking-widest">Autorizar Acesso</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fadeIn">
