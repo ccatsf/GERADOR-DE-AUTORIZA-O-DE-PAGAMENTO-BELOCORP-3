@@ -55,12 +55,17 @@ const App: React.FC = () => {
       setUser(currentUser);
     });
 
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
     // Escutar CRM para notificações de documentos faltando
     const unsubCRM = onSnapshot(collection(db, 'crm-cards'), (snapshot: any) => {
       let missing = 0;
       snapshot.forEach((doc: any) => {
         const card = doc.data();
-        // Verificar se algum item de checklist não está completo
         const hasMissing = card.checklists?.some((cl: any) => 
           cl.items?.some((item: any) => !item.isCompleted)
         );
@@ -69,11 +74,8 @@ const App: React.FC = () => {
       setMissingDocsCount(missing);
     });
 
-    return () => {
-      unsubscribe();
-      unsubCRM();
-    };
-  }, []);
+    return () => unsubCRM();
+  }, [user]);
 
   useEffect(() => {
     const fetchClientCount = async () => {
