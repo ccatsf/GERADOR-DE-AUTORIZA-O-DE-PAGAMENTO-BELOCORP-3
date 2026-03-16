@@ -4,7 +4,6 @@ import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/aut
 import { Dashboard } from './Dashboard';
 import PaymentGenerator from './PaymentGenerator';
 import Appointments from './Appointments';
-import CRM from './CRM_System/CRM';
 import Whiteboard from './Whiteboard';
 import { countActiveClients, getSheetNames, getSpreadsheetData } from './services/googleSheetsService';
 const App: React.FC = () => {
