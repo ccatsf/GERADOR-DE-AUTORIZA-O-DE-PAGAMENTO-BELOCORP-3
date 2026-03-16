@@ -8,17 +8,17 @@ import Whiteboard from './Whiteboard';
 import { countActiveClients, getSheetNames, getSpreadsheetData } from './services/googleSheetsService';
 
 // ─── Configuração de meses por usuária ───────────────────────────────────────
-// Rosa = Nickole (belocorp.financeiro3): Jan(0), Mar(2), Mai(4), Jul(6), Set(8), Nov(10)
+// Rosa = Isabel (belocorp.financeiro3): Jan(0), Mar(2), Mai(4), Jul(6), Set(8), Nov(10)
 // Amarelo = Nayanne (belocorpintermediadora): Fev(1), Abr(3), Jun(5), Ago(7), Out(9), Dez(11)
 const USER_MONTH_CONFIG: Record<string, { months: number[]; color: string; name: string }> = {
   'belocorp.financeiro3@gmail.com': {
     months: [0, 2, 4, 6, 8, 10],
-    color: '#f9a8d4', // rosa
-    name: 'Nickole',
+    color: '#f9a8d4', // azul
+    name: 'Isabel',
   },
   'belocorpintermediadora@gmail.com': {
     months: [1, 3, 5, 7, 9, 11],
-    color: '#fde68a', // amarelo
+    color: '#fde68a', // lilás
     name: 'Nayanne',
   },
 };
