@@ -95,6 +95,9 @@ const App: React.FC = () => {
           const months = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
           const currentMonthName = months[now.getMonth()];
           const matchingSheet = names.find(n => n.toUpperCase().includes(currentMonthName)) || names[0];
+
+          console.log('[Calendar] Abas encontradas:', names);
+          console.log('[Calendar] Aba selecionada:', matchingSheet);
           
           if (matchingSheet) {
             const count = await countActiveClients(matchingSheet, accessToken);
@@ -102,6 +105,8 @@ const App: React.FC = () => {
 
             // Buscar dados para o calendário
             const data = await getSpreadsheetData(matchingSheet, accessToken);
+            console.log('[Calendar] Linhas retornadas:', data.length);
+
             const dayMap = new Map<number, { count: number; total: number }>();
             data.forEach(row => {
               const paymentDate = row[2]; // Coluna C (DD/MM/YYYY)
@@ -116,10 +121,15 @@ const App: React.FC = () => {
                 }
               }
             });
+            console.log('[Calendar] Dias com pagamentos:', Array.from(dayMap.keys()));
             setAppointmentDays(dayMap);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("Erro ao buscar dados da planilha:", error);
+          // Token expirado — limpa pra forçar reconexão em Agendamentos
+          if (error?.message?.includes('401') || error?.message?.includes('token')) {
+            handleSetAccessToken(null);
+          }
         }
       }
     };
