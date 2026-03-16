@@ -37,7 +37,7 @@ service cloud.firestore {
     match /beneficiaries_directory/{beneficiaryId} {
       allow read: if isAuthenticated();
       allow create, update: if isAuthenticated();
-      allow delete: if isAdmin();
+      allow delete: if isAuthenticated();
     }
 
     match /crm-cards/{cardId} {
@@ -49,3 +49,4 @@ service cloud.firestore {
     }
   }
 }
+
