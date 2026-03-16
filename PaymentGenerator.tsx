@@ -64,6 +64,7 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user, onBack }) => 
   const [showHistory, setShowHistory] = useState(false);
   const [showDirectory, setShowDirectory] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isQuitacaoMode, setIsQuitacaoMode] = useState(false);
   const [currentDocId, setCurrentDocId] = useState<string | null>(null);
   const [googleDriveToken, setGoogleDriveToken] = useState<string | null>(null);
   
@@ -144,25 +145,7 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user, onBack }) => 
     
     setIsSaving(true);
     try {
-      let googleToken = googleDriveToken;
-
-      if (!googleToken) {
-        const provider = new GoogleAuthProvider();
-        provider.addScope('https://www.googleapis.com/auth/drive.file');
-        const result = await signInWithPopup(auth, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        googleToken = credential?.accessToken || null;
-        
-        if (googleToken) {
-          setGoogleDriveToken(googleToken);
-        }
-      }
-
-      if (!googleToken) {
-        throw new Error("Não foi possível obter acesso ao Google Drive.");
-      }
-
-      const payload = { ...data, uid: user.uid, updatedAt: serverTimestamp() };
+      const payload = { ...data, uid: user.uid, updatedAt: serverTimestamp(), type: isQuitacaoMode ? 'quitacao' : 'payment' };
 
       if (currentDocId) {
         await updateDoc(doc(db, 'authorizations', currentDocId), payload);
@@ -170,46 +153,70 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user, onBack }) => 
         const docRef = await addDoc(collection(db, 'authorizations'), { ...payload, createdAt: serverTimestamp() });
         setCurrentDocId(docRef.id);
       }
-      
-      const element = document.getElementById('autorizacao-documento');
-      
-      if (element) {
-        const pdfBlob = await html2pdf().set({
-          margin: 10,
-          filename: `Autorizacao_${data.clientName}.pdf`,
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        }).from(element).outputPdf('blob');
 
-        const userRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
-        let folderId = userDoc.exists() ? userDoc.data().driveFolderId : null;
-
-        if (!folderId) {
-          const userEmail = user.email;
-          if (!userEmail) throw new Error("E-mail não identificado.");
-          folderId = await findOrCreateFolder(userEmail, googleToken);
-          await setDoc(userRef, { driveFolderId: folderId }, { merge: true });
-        }
-
-        try {
-          await uploadFileToDrive(
-            `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
-            pdfBlob,
-            folderId,
-            googleToken
-          );
-        } catch (driveError: any) {
-          await uploadFileToDrive(
-            `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
-            pdfBlob,
-            undefined,
-            googleToken
-          );
-        }
-        alert("✅ Salvo no sistema e enviado para sua pasta no Google Drive!");
+      // Se for Quitação, não salva no Google Drive (conforme solicitado)
+      if (isQuitacaoMode) {
+        alert("✅ Quitação salva no sistema!");
       } else {
-        alert("✅ Salvo no sistema! (Abra 'Ver Documento' para enviar ao Drive)");
+        // Lógica existente para salvar no Drive (apenas para pagamentos normais)
+        let googleToken = googleDriveToken;
+
+        if (!googleToken) {
+          const provider = new GoogleAuthProvider();
+          provider.addScope('https://www.googleapis.com/auth/drive.file');
+          const result = await signInWithPopup(auth, provider);
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          googleToken = credential?.accessToken || null;
+          
+          if (googleToken) {
+            setGoogleDriveToken(googleToken);
+          }
+        }
+
+        if (googleToken) {
+          const element = document.getElementById('autorizacao-documento');
+          
+          if (element) {
+            const pdfBlob = await html2pdf().set({
+              margin: 10,
+              filename: `Autorizacao_${data.clientName}.pdf`,
+              html2canvas: { scale: 2, useCORS: true, logging: false },
+              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(element).outputPdf('blob');
+
+            const userRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userRef);
+            let folderId = userDoc.exists() ? userDoc.data().driveFolderId : null;
+
+            if (!folderId) {
+              const userEmail = user.email;
+              if (!userEmail) throw new Error("E-mail não identificado.");
+              folderId = await findOrCreateFolder(userEmail, googleToken);
+              await setDoc(userRef, { driveFolderId: folderId }, { merge: true });
+            }
+
+            try {
+              await uploadFileToDrive(
+                `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
+                pdfBlob,
+                folderId,
+                googleToken
+              );
+            } catch (driveError: any) {
+              await uploadFileToDrive(
+                `Autorizacao_${data.clientName.replace(/\s+/g, '_')}.pdf`,
+                pdfBlob,
+                undefined,
+                googleToken
+              );
+            }
+            alert("✅ Salvo no sistema e enviado para sua pasta no Google Drive!");
+          } else {
+            alert("✅ Salvo no sistema! (Abra 'Ver Documento' para enviar ao Drive)");
+          }
+        } else {
+          alert("✅ Salvo no sistema! (Sem acesso ao Google Drive)");
+        }
       }
 
       await fetchHistory(user.uid);
@@ -243,9 +250,10 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user, onBack }) => 
   };
 
   const handleLoadDoc = (savedDoc: any) => {
-    const { id, uid, createdAt, updatedAt, ...docData } = savedDoc;
+    const { id, uid, createdAt, updatedAt, type, ...docData } = savedDoc;
     setData(docData);
     setCurrentDocId(id);
+    setIsQuitacaoMode(type === 'quitacao');
     setShowHistory(false);
     setShowPreview(false);
   };
@@ -335,17 +343,36 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user, onBack }) => 
             {user && (
               <div className="flex items-center space-x-3 no-print">
                 <button 
-                  onClick={() => setShowDirectory(true)} 
-                  className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition text-sm flex items-center space-x-1"
+                  onClick={() => { setShowDirectory(false); setShowHistory(false); setIsQuitacaoMode(false); }} 
+                  className={`text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition text-sm flex items-center space-x-1 ${!isQuitacaoMode && !showDirectory && !showHistory ? 'text-indigo-600 font-bold border-b-2 border-indigo-600' : ''}`}
+                >
+                  <i className="fas fa-file-invoice-dollar"></i>
+                  <span>Gerador</span>
+                </button>
+
+                <button 
+                  onClick={() => { setShowDirectory(true); setShowHistory(false); setIsQuitacaoMode(false); }} 
+                  className={`text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition text-sm flex items-center space-x-1 ${showDirectory ? 'text-indigo-600 font-bold border-b-2 border-indigo-600' : ''}`}
                   title="Ver base de dados de beneficiários"
                 >
                   <i className="fas fa-address-book"></i>
                   <span className="hidden md:inline">Beneficiários</span>
                 </button>
 
-                <button onClick={() => setShowHistory(!showHistory)} className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition text-sm flex items-center space-x-1">
+                <button 
+                  onClick={() => { setShowHistory(!showHistory); setShowDirectory(false); setIsQuitacaoMode(false); }} 
+                  className={`text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition text-sm flex items-center space-x-1 ${showHistory ? 'text-indigo-600 font-bold border-b-2 border-indigo-600' : ''}`}
+                >
                   <i className="fas fa-history"></i>
                   <span>Meus Salvos</span>
+                </button>
+
+                <button 
+                  onClick={() => { setIsQuitacaoMode(true); setShowDirectory(false); setShowHistory(false); }} 
+                  className={`text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition text-sm flex items-center space-x-1 ${isQuitacaoMode ? 'text-indigo-600 font-bold border-b-2 border-indigo-600' : ''}`}
+                >
+                  <i className="fas fa-check-double"></i>
+                  <span>Quitação</span>
                 </button>
               </div>
             )}
@@ -455,41 +482,207 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user, onBack }) => 
 
         {!showPreview ? (
           <div className="space-y-6">
-            <section className="bg-white dark:bg-zinc-800 p-6 rounded-xl shadow-sm border dark:border-zinc-700">
-              <div className="flex items-center space-x-2 mb-4">
-                <i className="fas fa-magic text-indigo-500"></i>
-                <h2 className="font-semibold dark:text-white">Preenchimento Inteligente (IA)</h2>
+            {!isQuitacaoMode && (
+              <section className="bg-white dark:bg-zinc-800 p-6 rounded-xl shadow-sm border dark:border-zinc-700">
+                <div className="flex items-center space-x-2 mb-4">
+                  <i className="fas fa-magic text-indigo-500"></i>
+                  <h2 className="font-semibold dark:text-white">Preenchimento Inteligente (IA)</h2>
+                </div>
+                <textarea 
+                  placeholder="Cole aqui o texto do pagamento (e-mail, whatsapp, etc) para a IA preencher o formulário automaticamente..." 
+                  className="w-full h-24 p-4 border dark:border-zinc-700 dark:bg-zinc-900 rounded-lg outline-none dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" 
+                  onBlur={(e) => handleAiFill(e.target.value)}
+                ></textarea>
+                {isAiLoading && <p className="text-xs text-indigo-500 mt-2 flex items-center"><i className="fas fa-spinner fa-spin mr-2"></i> Processando com IA...</p>}
+              </section>
+            )}
+
+            {isQuitacaoMode ? (
+              <div className="animate-fadeIn">
+                <div className="bg-white dark:bg-zinc-800 p-8 rounded-2xl shadow-sm border dark:border-zinc-700">
+                  <div className="flex items-center space-x-3 mb-8 pb-4 border-b dark:border-zinc-700">
+                    <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                      <i className="fas fa-check-double text-2xl"></i>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold dark:text-white uppercase tracking-tight">Formulário de Quitação</h2>
+                      <p className="text-sm text-gray-500 dark:text-zinc-400">Preencha os dados para gerar o documento de quitação</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Dados do Cliente</h3>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">Nome do Cliente</label>
+                        <input 
+                          type="text" 
+                          value={data.clientName} 
+                          onChange={(e) => handleUpdateData({ clientName: e.target.value })}
+                          className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                          placeholder="Nome completo"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">CPF</label>
+                        <input 
+                          type="text" 
+                          value={data.clientCpf} 
+                          onChange={(e) => handleUpdateData({ clientCpf: e.target.value })}
+                          className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                          placeholder="000.000.000-00"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">Contrato nº</label>
+                          <input 
+                            type="text" 
+                            value={data.contractNumber} 
+                            onChange={(e) => handleUpdateData({ contractNumber: e.target.value })}
+                            className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                            placeholder="Ex: 326105"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">Valor a Receber (R$)</label>
+                          <input 
+                            type="text" 
+                            value={data.totalAmount} 
+                            onChange={(e) => handleUpdateData({ totalAmount: maskCurrency(e.target.value) })}
+                            className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                            placeholder="R$ 0,00"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">Plano Quitado Em</label>
+                        <input 
+                          type="date" 
+                          value={data.quitacaoDate || ''} 
+                          onChange={(e) => handleUpdateData({ quitacaoDate: e.target.value })}
+                          className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Dados Bancários</h3>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">Beneficiário</label>
+                        <input 
+                          type="text" 
+                          value={data.beneficiaries[0]?.name || ''} 
+                          onChange={(e) => handleUpdateBeneficiary(data.beneficiaries[0]?.id, { name: e.target.value })}
+                          className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                          placeholder="Nome do beneficiário"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">CPF/CNPJ</label>
+                        <input 
+                          type="text" 
+                          value={data.beneficiaries[0]?.document || ''} 
+                          onChange={(e) => handleUpdateBeneficiary(data.beneficiaries[0]?.id, { document: e.target.value })}
+                          className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                          placeholder="00.000.000/0001-00"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">Banco</label>
+                          <input 
+                            type="text" 
+                            value={data.beneficiaries[0]?.bank || ''} 
+                            onChange={(e) => handleUpdateBeneficiary(data.beneficiaries[0]?.id, { bank: e.target.value })}
+                            className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">Tipo de Conta</label>
+                          <input 
+                            type="text" 
+                            value={data.beneficiaries[0]?.type || ''} 
+                            onChange={(e) => handleUpdateBeneficiary(data.beneficiaries[0]?.id, { type: e.target.value })}
+                            className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                            placeholder="Corrente / Poupança"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">Agência</label>
+                          <input 
+                            type="text" 
+                            value={data.beneficiaries[0]?.agency || ''} 
+                            onChange={(e) => handleUpdateBeneficiary(data.beneficiaries[0]?.id, { agency: e.target.value })}
+                            className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">Conta</label>
+                          <input 
+                            type="text" 
+                            value={data.beneficiaries[0]?.account || ''} 
+                            onChange={(e) => handleUpdateBeneficiary(data.beneficiaries[0]?.id, { account: e.target.value })}
+                            className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2 uppercase">PIX</label>
+                        <input 
+                          type="text" 
+                          value={data.beneficiaries[0]?.pix || ''} 
+                          onChange={(e) => handleUpdateBeneficiary(data.beneficiaries[0]?.id, { pix: e.target.value })}
+                          className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
+                          placeholder="Chave PIX"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <textarea 
-                placeholder="Cole aqui o texto do pagamento (e-mail, whatsapp, etc) para a IA preencher o formulário automaticamente..." 
-                className="w-full h-24 p-4 border dark:border-zinc-700 dark:bg-zinc-900 rounded-lg outline-none dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" 
-                onBlur={(e) => handleAiFill(e.target.value)}
-              ></textarea>
-              {isAiLoading && <p className="text-xs text-indigo-500 mt-2 flex items-center"><i className="fas fa-spinner fa-spin mr-2"></i> Processando com IA...</p>}
-            </section>
-            <PaymentForm 
-              data={data} 
-              activeTab={activeTab} 
-              onUpdate={handleUpdateData} 
-              onAddBeneficiary={handleAddBeneficiary} 
-              onRemoveBeneficiary={handleRemoveBeneficiary} 
-              onUpdateBeneficiary={handleUpdateBeneficiary} 
-            />
+            ) : (
+              <PaymentForm 
+                data={data} 
+                activeTab={activeTab} 
+                onUpdate={handleUpdateData} 
+                onAddBeneficiary={handleAddBeneficiary} 
+                onRemoveBeneficiary={handleRemoveBeneficiary} 
+                onUpdateBeneficiary={handleUpdateBeneficiary} 
+              />
+            )}
           </div>
         ) : (
           <div className="relative">
             {isPdfLoading && <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center"><div className="animate-spin w-10 h-10 border-4 border-white border-t-transparent rounded-full"></div></div>}
             <div className="flex justify-center gap-4 mb-4 no-print">
-               <button onClick={() => handleDownloadPdf('capa-documento', 'Capa')} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition shadow-md flex items-center space-x-2">
-                 <i className="fas fa-file-pdf"></i>
-                 <span>Baixar Capa</span>
-               </button>
-               <button onClick={() => handleDownloadPdf('autorizacao-documento', 'Autorizacao')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition shadow-md flex items-center space-x-2">
-                 <i className="fas fa-file-invoice-dollar"></i>
-                 <span>Baixar Autorização</span>
-               </button>
+               {!isQuitacaoMode ? (
+                 <>
+                   <button onClick={() => handleDownloadPdf('capa-documento', 'Capa')} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition shadow-md flex items-center space-x-2">
+                     <i className="fas fa-file-pdf"></i>
+                     <span>Baixar Capa</span>
+                   </button>
+                   <button onClick={() => handleDownloadPdf('autorizacao-documento', 'Autorizacao')} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition shadow-md flex items-center space-x-2">
+                     <i className="fas fa-file-invoice-dollar"></i>
+                     <span>Baixar Autorização</span>
+                   </button>
+                 </>
+               ) : (
+                 <button onClick={() => handleDownloadPdf('quitacao-documento', 'Quitacao')} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl transition shadow-lg flex items-center space-x-3 font-bold">
+                   <i className="fas fa-file-pdf text-xl"></i>
+                   <span>Baixar Documento de Quitação</span>
+                 </button>
+               )}
             </div>
-            <DocumentPreview data={data} ref={previewRef} onUpdate={handleUpdateData} onUpdateBeneficiary={handleUpdateBeneficiary} />
+            <DocumentPreview 
+              data={data} 
+              ref={previewRef} 
+              isQuitacaoMode={isQuitacaoMode}
+              onUpdate={handleUpdateData} 
+              onUpdateBeneficiary={handleUpdateBeneficiary} 
+            />
           </div>
         )}
       </div>
