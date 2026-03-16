@@ -24,7 +24,8 @@ const Appointments: React.FC<AppointmentsProps> = ({ user, onBack, onConnect }) 
   const [days, setDays] = useState<AppointmentDay[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(() => sessionStorage.getItem('google_access_token'));
+  const [activeClientsCount, setActiveClientsCount] = useState<number | string>('***');
 
   // Form for new appointment
   const [newAppointment, setNewAppointment] = useState({
@@ -34,6 +35,44 @@ const Appointments: React.FC<AppointmentsProps> = ({ user, onBack, onConnect }) 
     paymentDate: '',
     type: 'PAGAMENTO'
   });
+
+  // Carregar nomes das abas se já tiver token na sessão
+  useEffect(() => {
+    const fetchSheetNames = async () => {
+      if (accessToken && sheetNames.length === 0) {
+        try {
+          const names = await getSheetNames(accessToken);
+          setSheetNames(names);
+          
+          const now = new Date();
+          const months = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+          const currentMonthName = months[now.getMonth()];
+          const matchingSheet = names.find(n => n.toUpperCase().includes(currentMonthName)) || names[0];
+          setCurrentSheet(matchingSheet);
+        } catch (err) {
+          console.error("Erro ao carregar nomes das abas com token da sessão:", err);
+        }
+      }
+    };
+    fetchSheetNames();
+  }, [accessToken]);
+
+  // Contar clientes quando mudar a aba ou token
+  useEffect(() => {
+    const fetchClientCount = async () => {
+      if (currentSheet && accessToken) {
+        try {
+          const { countActiveClients } = await import('./services/googleSheetsService');
+          const count = await countActiveClients(currentSheet, accessToken);
+          setActiveClientsCount(count);
+        } catch (err) {
+          console.error("Erro ao contar clientes:", err);
+          setActiveClientsCount('err');
+        }
+      }
+    };
+    fetchClientCount();
+  }, [currentSheet, accessToken]);
 
   const handleConnect = async () => {
     try {
@@ -230,6 +269,10 @@ const Appointments: React.FC<AppointmentsProps> = ({ user, onBack, onConnect }) 
           </div>
           
           <div className="flex items-center space-x-4">
+            <div className="text-right mr-4">
+              <p className="text-[10px] text-gray-400 font-black uppercase">Total de Clientes</p>
+              <p className="text-xl font-bold text-red-500">{activeClientsCount}</p>
+            </div>
             <label className="text-xs font-bold text-gray-500 uppercase">Mês/Planilha:</label>
             <select 
               value={currentSheet}
@@ -387,6 +430,3 @@ const Appointments: React.FC<AppointmentsProps> = ({ user, onBack, onConnect }) 
 };
 
 export default Appointments;
-
-
-
