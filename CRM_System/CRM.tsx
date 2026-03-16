@@ -273,7 +273,7 @@ export default function CRM({ onBack }: CRMProps) {
     });
   };
 
-  const addList = () => { takeSnapshot(); setLists(prev => [...prev, { id: generateId(), title: "Novo Quadro", theme: 'bg-purple-100' }]); };
+  const addList = () => { takeSnapshot(); setLists(prev => [...prev, { id: generateId(), title: "Novo Quadro", theme: 'violet' }]); };
   const updateList = useCallback((listId: Id, updates: Partial<ListType>) => { takeSnapshot(); setLists(prev => prev.map(l => l.id === listId ? { ...l, ...updates } : l)); }, [setLists, takeSnapshot]);
   const deleteList = useCallback((listId: Id) => { takeSnapshot(); setLists(prev => prev.filter(l => l.id !== listId)); setCards(prev => prev.filter(c => c.listId !== listId)); }, [setLists, setCards, takeSnapshot]);
 
@@ -352,7 +352,7 @@ export default function CRM({ onBack }: CRMProps) {
 
   return (
     <div 
-      className={`flex flex-col h-full relative overflow-hidden transition-colors duration-300 animate-fadeIn ${!backgroundImage ? 'bg-purple-50/50 dark:bg-slate-950' : ''}`}
+      className={`flex flex-col h-full relative overflow-hidden transition-colors duration-300 animate-fadeIn ${!backgroundImage ? 'bg-[#f0f0f0] dark:bg-slate-950' : ''}`}
       style={backgroundImage ? { backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' } : {}}
     >
       {backgroundImage && <div className="fixed inset-0 bg-white/20 dark:bg-black/50 backdrop-blur-[2px] z-0 pointer-events-none transition-colors duration-300" />}
@@ -475,10 +475,11 @@ export default function CRM({ onBack }: CRMProps) {
       </header>
 
       <div className="flex-1 flex overflow-hidden relative z-10">
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <main className="flex-1 p-4 md:p-6 overflow-x-auto overflow-y-hidden">
+          <div className="flex gap-5 h-full items-start pb-4" style={{ minWidth: 'max-content' }}>
             {lists.map(list => (
-              <KanbanColumn
+              <div key={list.id} className="w-[280px] shrink-0">
+                <KanbanColumn
                 key={list.id}
                 list={list}
                 cards={filteredCards.filter(c => c.listId === list.id)}
@@ -494,11 +495,15 @@ export default function CRM({ onBack }: CRMProps) {
                 updateList={updateList}
                 deleteList={deleteList}
               />
+              </div>
             ))}
-            <div className="flex items-center justify-center min-h-[120px] bg-slate-100/50 dark:bg-slate-800/50 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
-              <button onClick={addList} className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 font-bold py-4 px-6 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+            <div className="w-[280px] shrink-0 flex items-start pt-1">
+              <button
+                onClick={addList}
+                className="w-full py-4 flex items-center justify-center gap-2 text-sm font-bold text-slate-500 border-2 border-dashed border-slate-300 rounded-3xl hover:border-slate-400 hover:text-slate-700 hover:bg-white/60 transition-all"
+              >
                 <PlusIcon />
-                <span>Novo Quadro</span>
+                Novo Quadro
               </button>
             </div>
           </div>
