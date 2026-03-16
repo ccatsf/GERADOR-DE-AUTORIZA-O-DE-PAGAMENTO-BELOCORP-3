@@ -366,8 +366,8 @@ export default function CRM({ onBack }: CRMProps) {
         </div>
       </div>
 
-      <header className="shrink-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-purple-100 dark:border-zinc-800 shadow-sm px-6 py-4 flex items-center justify-between z-40">
-        <div className="flex items-center gap-4">
+      <header className="shrink-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-purple-100 dark:border-zinc-800 shadow-sm px-4 sm:px-6 py-3 flex items-center justify-between z-40">
+        <div className="flex items-center gap-2 sm:gap-4">
           <button 
             onClick={onBack}
             className="p-2 hover:bg-purple-50 dark:hover:bg-slate-800 rounded-full transition-colors text-purple-500"
@@ -376,17 +376,27 @@ export default function CRM({ onBack }: CRMProps) {
             <ChevronLeftIcon className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2 text-purple-600 dark:text-purple-500">
-            <HeartIcon solid className="w-8 h-8 shrink-0" />
-            <div className="hidden lg:flex flex-col">
-              <h1 className="text-2xl font-bold tracking-tight leading-none"> CRM </h1>
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 truncate max-w-[200px]">
+            <HeartIcon solid className="w-7 h-7 shrink-0" />
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight leading-none">Rosa CRM</h1>
+              <span 
+                onClick={() => setIsWorkspaceMenuOpen(true)}
+                className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 cursor-pointer hover:underline truncate max-w-[150px] sm:max-w-[200px]"
+              >
                 {workspaces.find(w => w.id === activeWorkspaceId)?.name}
               </span>
             </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex-1 flex justify-center px-4">
+          <div className="relative w-full max-w-md">
+            <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-300" />
+            <input type="text" placeholder="Buscar clientes, contratos..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-11 pr-4 py-2.5 w-full rounded-full border border-purple-200 dark:border-slate-700 bg-purple-50/80 dark:bg-slate-800/80 focus:bg-white outline-none transition-all dark:text-slate-200" />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-full p-1 border border-slate-200 dark:border-slate-700">
              <button onClick={undo} disabled={past.length === 0} className={`p-1.5 rounded-full transition-colors ${past.length > 0 ? 'text-slate-600 dark:text-slate-300 hover:text-purple-500 hover:bg-white dark:hover:bg-slate-700' : 'text-slate-300 dark:text-slate-600 cursor-not-allowed'}`} title="Desfazer"><UndoIcon className="w-4 h-4" /></button>
              <button onClick={redo} disabled={future.length === 0} className={`p-1.5 rounded-full transition-colors ${future.length > 0 ? 'text-slate-600 dark:text-slate-300 hover:text-purple-500 hover:bg-white dark:hover:bg-slate-700' : 'text-slate-300 dark:text-slate-600 cursor-not-allowed'}`} title="Refazer"><RedoIcon className="w-4 h-4" /></button>
@@ -422,15 +432,10 @@ export default function CRM({ onBack }: CRMProps) {
             )}
           </div>
 
-          <div className="flex gap-2">
-            <button onClick={() => setActiveSidebar(prev => prev === 'dashboard' ? 'none' : 'dashboard')} className={`flex items-center gap-2 px-3 lg:px-4 py-2 rounded-full font-medium transition-colors text-sm ${activeSidebar === 'dashboard' ? 'bg-teal-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}><ChartPieIcon className="w-4 h-4 lg:w-5 lg:h-5" /><span className="hidden md:inline">Visão Geral</span></button>
-            <button onClick={() => setActiveSidebar(prev => prev === 'queue' ? 'none' : 'queue')} className={`flex items-center gap-2 px-3 lg:px-4 py-2 rounded-full font-medium transition-colors text-sm ${activeSidebar === 'queue' ? 'bg-purple-500 text-white' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'}`}><ClipboardListIcon className="w-4 h-4 lg:w-5 lg:h-5" /><span className="hidden md:inline">Fila</span></button>
-            <button onClick={() => setActiveSidebar(prev => prev === 'notes' ? 'none' : 'notes')} className={`flex items-center gap-2 px-3 lg:px-4 py-2 rounded-full font-medium transition-colors text-sm ${activeSidebar === 'notes' ? 'bg-purple-500 text-white' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'}`}><DocumentTextIcon className="w-4 h-4 lg:w-5 lg:h-5" /><span className="hidden md:inline">Notas</span></button>
-          </div>
-
-          <div className="relative hidden md:block">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-300" />
-            <input type="text" placeholder="Buscar..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 pr-4 py-2 w-48 lg:w-64 rounded-full border border-purple-200 dark:border-slate-700 bg-purple-50 dark:bg-slate-800 focus:bg-white outline-none transition-all dark:text-slate-200" />
+          <div className="hidden sm:flex gap-2">
+            <button onClick={() => setActiveSidebar(prev => prev === 'dashboard' ? 'none' : 'dashboard')} className={`flex items-center gap-2 px-3 py-2 rounded-full font-medium transition-colors text-sm ${activeSidebar === 'dashboard' ? 'bg-teal-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}><ChartPieIcon className="w-5 h-5" /><span className="hidden lg:inline">Visão Geral</span></button>
+            <button onClick={() => setActiveSidebar(prev => prev === 'queue' ? 'none' : 'queue')} className={`flex items-center gap-2 px-3 py-2 rounded-full font-medium transition-colors text-sm ${activeSidebar === 'queue' ? 'bg-purple-500 text-white' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'}`}><ClipboardListIcon className="w-5 h-5" /><span className="hidden lg:inline">Fila</span></button>
+            <button onClick={() => setActiveSidebar(prev => prev === 'notes' ? 'none' : 'notes')} className={`flex items-center gap-2 px-3 py-2 rounded-full font-medium transition-colors text-sm ${activeSidebar === 'notes' ? 'bg-purple-500 text-white' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'}`}><DocumentTextIcon className="w-5 h-5" /><span className="hidden lg:inline">Notas</span></button>
           </div>
 
           <button onClick={() => setIsWorkspaceMenuOpen(true)} className="p-2 text-purple-500 hover:text-purple-600 bg-purple-50 dark:bg-slate-800 rounded-lg transition-colors"><MenuIcon className="w-6 h-6" /></button>
@@ -438,8 +443,8 @@ export default function CRM({ onBack }: CRMProps) {
       </header>
 
       <div className="flex-1 flex overflow-hidden relative z-10">
-        <main className="flex-1 p-6 overflow-x-auto overflow-y-hidden">
-          <div className="flex gap-6 h-full items-start min-w-max">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {lists.map(list => (
               <KanbanColumn
                 key={list.id}
@@ -458,7 +463,12 @@ export default function CRM({ onBack }: CRMProps) {
                 deleteList={deleteList}
               />
             ))}
-            <button onClick={addList} className="shrink-0 w-80 bg-purple-100/50 dark:bg-slate-800/50 border border-dashed border-purple-300 dark:border-slate-600 rounded-2xl p-4 flex items-center justify-center gap-2 text-purple-600 dark:text-slate-400 font-medium h-[72px]"><PlusIcon /><span>Novo Quadro</span></button>
+            <div className="flex items-center justify-center min-h-[120px] bg-slate-100/50 dark:bg-slate-800/50 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
+              <button onClick={addList} className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 font-bold py-4 px-6 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                <PlusIcon />
+                <span>Novo Quadro</span>
+              </button>
+            </div>
           </div>
         </main>
 
