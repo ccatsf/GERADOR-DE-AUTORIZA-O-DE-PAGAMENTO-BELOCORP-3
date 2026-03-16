@@ -378,7 +378,7 @@ export default function CRM({ onBack }: CRMProps) {
           <div className="flex items-center gap-2 text-purple-600 dark:text-purple-500">
             <HeartIcon solid className="w-8 h-8 shrink-0" />
             <div className="hidden lg:flex flex-col">
-              <h1 className="text-2xl font-bold tracking-tight leading-none">Rosa CRM</h1>
+              <h1 className="text-2xl font-bold tracking-tight leading-none"> CRM </h1>
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 truncate max-w-[200px]">
                 {workspaces.find(w => w.id === activeWorkspaceId)?.name}
               </span>
