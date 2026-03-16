@@ -21,6 +21,7 @@ export interface PaymentAuthData {
   needsGuarantor: 'sim' | 'nao' | '';
   doctorName: string;
   paymentAmount: string; // Valor específico que aparece na capa como "Valor a pagar"
+  quitacaoDate?: string; // Novo campo para Quitação
   beneficiaries: Beneficiary[];
 }
 
