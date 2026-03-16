@@ -370,6 +370,12 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                 </div>
               ))}
             </div>
+
+            {/* Valor Total */}
+            <div style={{ border: '1px solid black', padding: '6px 10px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...fontSizeAuthBody }}>
+              <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Valor Total:</span>
+              <span style={{ fontWeight: 'bold' }}>{displayAmount(data.totalAmount)}</span>
+            </div>
             
             <div style={{ marginTop: 'auto', paddingTop: '10px', textAlign: 'right', fontSize: '8pt', fontStyle: 'italic', opacity: 0.8 }}>
               Data de Emissão: {currentDate}
