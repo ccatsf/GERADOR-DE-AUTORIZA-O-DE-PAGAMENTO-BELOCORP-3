@@ -313,8 +313,8 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
 
             <div style={{ ...fontSizeAuthBody }}>
               {data.beneficiaries.map((ben, index) => (
-                <div key={ben.id} style={{ border: '1px solid black', padding: '10px', marginBottom: '8px', backgroundColor: 'white' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', borderBottom: '1px dashed #ccc', paddingBottom: '2px' }}>
+                <div key={ben.id} style={{ border: '1px solid black', padding: '6px 10px', marginBottom: '6px', backgroundColor: 'white' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #ccc', paddingBottom: '2px', marginBottom: '2px' }}>
                     <span style={{ fontWeight: 'bold' }}>Beneficiário {index + 1}: </span>
                     <span 
                       contentEditable 
@@ -326,7 +326,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                       {ben.name || '_________________________'}
                     </span>
                   </div>
-                  <div style={{ marginBottom: '2px' }}>
+                  <div style={{ marginBottom: '1px' }}>
                     <span style={{ fontWeight: 'bold' }}>PIX: </span>
                     <span 
                       contentEditable 
@@ -337,77 +337,34 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                       {ben.pix || ''}
                     </span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '2px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '1px' }}>
                     <div>
                       <span style={{ fontWeight: 'bold' }}>CPF/CNPJ: </span>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'document', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                      >
-                        {ben.document || ''}
-                      </span>
+                      <span contentEditable suppressContentEditableWarning onBlur={(e) => handleBeneficiaryBlur(ben.id, 'document', e.currentTarget.textContent || '')} className={editableClass}>{ben.document || ''}</span>
                     </div>
                     <div>
                       <span style={{ fontWeight: 'bold' }}>Tipo: </span>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'type', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                      >
-                        {ben.type || ''}
-                      </span>
+                      <span contentEditable suppressContentEditableWarning onBlur={(e) => handleBeneficiaryBlur(ben.id, 'type', e.currentTarget.textContent || '')} className={editableClass}>{ben.type || ''}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '2px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '1px' }}>
                     <div>
                       <span style={{ fontWeight: 'bold' }}>Banco: </span>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'bank', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                      >
-                        {ben.bank || ''}
-                      </span>
+                      <span contentEditable suppressContentEditableWarning onBlur={(e) => handleBeneficiaryBlur(ben.id, 'bank', e.currentTarget.textContent || '')} className={editableClass}>{ben.bank || ''}</span>
                     </div>
                     <div>
                       <span style={{ fontWeight: 'bold' }}>Agência: </span>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'agency', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                      >
-                        {ben.agency || ''}
-                      </span>
+                      <span contentEditable suppressContentEditableWarning onBlur={(e) => handleBeneficiaryBlur(ben.id, 'agency', e.currentTarget.textContent || '')} className={editableClass}>{ben.agency || ''}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                     <div>
                       <span style={{ fontWeight: 'bold' }}>Conta: </span>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'account', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                      >
-                        {ben.account || ''}
-                      </span>
+                      <span contentEditable suppressContentEditableWarning onBlur={(e) => handleBeneficiaryBlur(ben.id, 'account', e.currentTarget.textContent || '')} className={editableClass}>{ben.account || ''}</span>
                     </div>
                     <div>
                       <span style={{ fontWeight: 'bold' }}>Valor: </span>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'amount', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                        style={{ fontWeight: 'bold', fontSize: '9.5pt' }}
-                      >
-                        {displayAmount(ben.amount)}
-                      </span>
+                      <span contentEditable suppressContentEditableWarning onBlur={(e) => handleBeneficiaryBlur(ben.id, 'amount', e.currentTarget.textContent || '')} className={editableClass} style={{ fontWeight: 'bold', fontSize: '9.5pt' }}>{displayAmount(ben.amount)}</span>
                     </div>
                   </div>
                 </div>
