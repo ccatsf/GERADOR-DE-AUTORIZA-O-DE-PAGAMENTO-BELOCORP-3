@@ -159,105 +159,88 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        {/* Lado Esquerdo: Afazeres e Atividades */}
-        <div className="space-y-10">
-          
-          {/* Container da Lista de Afazeres */}
-          <div className="bg-gray-50/50 dark:bg-zinc-900/30 p-8 rounded-[40px] border border-gray-100 dark:border-zinc-800">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest text-sm">Lista de Afazeres Diários</h3>
-              <button 
-                onClick={() => setIsAddingTodo(!isAddingTodo)}
-                className="w-10 h-10 bg-white dark:bg-zinc-800 text-purple-600 rounded-full shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-gray-100 dark:border-zinc-700"
-              >
-                <i className={`fas ${isAddingTodo ? 'fa-times' : 'fa-plus'}`}></i>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {isAddingTodo && (
-                <form onSubmit={handleAddTodo} className="mb-6 animate-fadeIn">
-                  <input 
-                    autoFocus
-                    type="text"
-                    value={newTodo}
-                    onChange={(e) => setNewTodo(e.target.value)}
-                    placeholder="Escreva uma nova tarefa..."
-                    className="w-full bg-white dark:bg-zinc-800 p-5 rounded-[25px] border border-gray-100 dark:border-zinc-700 shadow-sm outline-none focus:ring-2 focus:ring-purple-500 dark:text-white font-bold"
-                  />
-                </form>
-              )}
-
-              {todos.map((todo) => (
-                <div 
-                  key={todo.id}
-                  className={`group flex items-center justify-between p-5 rounded-[25px] transition-all cursor-pointer ${
-                    todo.completed 
-                      ? 'bg-gray-100/50 dark:bg-zinc-800/40 opacity-60' 
-                      : 'bg-white dark:bg-zinc-800 shadow-sm border border-gray-50 dark:border-zinc-700 hover:border-purple-200'
-                  }`}
-                  onClick={() => toggleTodo(todo)}
-                >
-                  <div className="flex items-center space-x-5 flex-1">
-                    {/* Caixa Selecionável (Círculo Checkbox) */}
-                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
-                      todo.completed 
-                        ? 'bg-purple-500 border-purple-500 text-white' 
-                        : 'border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800'
-                    }`}>
-                      {todo.completed && <i className="fas fa-check text-xs"></i>}
-                    </div>
-                    
-                    <span className={`text-gray-700 dark:text-gray-200 font-bold text-lg ${todo.completed ? 'line-through text-gray-400' : ''}`}>
-                      {todo.text}
-                    </span>
-                  </div>
-
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); deleteTodo(todo.id); }}
-                    className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2"
-                  >
-                    <i className="fas fa-trash-alt"></i>
-                  </button>
-                </div>
-              ))}
-
-              {todos.length === 0 && !isAddingTodo && (
-                <div className="text-center py-10">
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Nenhuma tarefa para hoje</p>
-                </div>
-              )}
-            </div>
+        {/* Lista de Afazeres */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-sm">Lista de Afazeres Diários</h3>
+            <button 
+              onClick={() => setIsAddingTodo(true)}
+              className="w-10 h-10 bg-white dark:bg-zinc-800 rounded-full shadow-sm border dark:border-zinc-700 flex items-center justify-center text-purple-600 hover:bg-purple-50 transition-colors"
+            >
+              <i className="fas fa-plus"></i>
+            </button>
           </div>
+          
+          <div className="bg-white dark:bg-zinc-800 p-8 rounded-3xl shadow-sm border dark:border-zinc-700 min-h-[300px] flex flex-col">
+            {isAddingTodo && (
+              <form onSubmit={handleAddTodo} className="mb-6 flex gap-3">
+                <input 
+                  autoFocus
+                  type="text" 
+                  value={newTodo}
+                  onChange={(e) => setNewTodo(e.target.value)}
+                  placeholder="O que precisa ser feito?"
+                  className="flex-1 bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-2xl px-5 py-3 outline-none focus:ring-2 focus:ring-purple-500 dark:text-white"
+                />
+                <button type="submit" className="bg-purple-600 text-white px-6 rounded-2xl font-bold hover:bg-purple-700 transition-colors">OK</button>
+              </form>
+            )}
 
-          {/* Cards de Atividades */}
-          <div className="space-y-6">
-            <h3 className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-sm">Atividades Administrativas</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ActivityCard 
-                icon="fa-file-alt" 
-                title="CRM - Captação de Docs" 
-                color="text-purple-600" 
-                bgColor="bg-purple-50"
-                onClick={() => onNavigate('crm')}
-              />
-              <ActivityCard 
-                icon="fa-shield-alt" 
-                title="Gerador de Autorização" 
-                color="text-purple-600" 
-                bgColor="bg-purple-50"
-                onClick={() => onNavigate('payment')}
-              />
-              <ActivityCard 
-                icon="fa-calendar-alt" 
-                title="Agendamentos" 
-                color="text-purple-600" 
-                bgColor="bg-purple-50"
-                onClick={() => onNavigate('appointments')}
-              />
-            </div>
+            {todos.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-400 opacity-60 py-10">
+                <i className="fas fa-tasks text-4xl mb-4"></i>
+                <p className="font-bold uppercase tracking-widest text-xs">Nenhuma tarefa para hoje</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {todos.map(todo => (
+                  <div key={todo.id} className="flex items-center justify-between group">
+                    <div className="flex items-center space-x-4">
+                      <button 
+                        onClick={() => toggleTodo(todo)}
+                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${todo.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 dark:border-zinc-600 hover:border-purple-500'}`}
+                      >
+                        {todo.completed && <i className="fas fa-check text-[10px]"></i>}
+                      </button>
+                      <span className={`font-bold ${todo.completed ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-200'}`}>{todo.text}</span>
+                    </div>
+                    <button onClick={() => deleteTodo(todo.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2">
+                      <i className="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Atividades Administrativas */}
+        <div className="space-y-6">
+          <h3 className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-sm">Atividades Administrativas</h3>
+          <div className="grid grid-cols-1 gap-4">
+            <ActivityCard 
+              icon="fa-file-alt" 
+              title="CRM - Captação de Docs" 
+              color="text-purple-600" 
+              bgColor="bg-purple-50"
+              onClick={() => onNavigate('crm')}
+            />
+            <ActivityCard 
+              icon="fa-shield-alt" 
+              title="Gerador de Autorização" 
+              color="text-purple-600" 
+              bgColor="bg-purple-50"
+              onClick={() => onNavigate('generator')}
+            />
+            <ActivityCard 
+              icon="fa-calendar-alt" 
+              title="Agendamentos" 
+              color="text-purple-600" 
+              bgColor="bg-purple-50"
+              onClick={() => onNavigate('appointments')}
+            />
           </div>
         </div>
 
