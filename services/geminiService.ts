@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { PaymentAuthData } from "../types";
 
@@ -57,3 +56,20 @@ export const parsePaymentText = async (rawText: string): Promise<Partial<Payment
   }
 };
 
+export const generateDailyQuote = async (): Promise<string> => {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) return "Foco, força e fé para conquistar seus objetivos hoje!";
+
+  const ai = new GoogleGenAI({ apiKey });
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: "Gere uma frase motivacional curta, inspiradora e levemente 'engraçadinha' ou 'fofa' para uma equipe administrativa de uma empresa chamada BELOCORP. A frase deve ser em português e ter no máximo 15 palavras. Não use aspas na resposta.",
+    });
+    return response.text?.trim() || "Foco, força e fé para conquistar seus objetivos hoje!";
+  } catch (e) {
+    console.error("Erro ao gerar frase do dia:", e);
+    return "Foco, força e fé para conquistar seus objetivos hoje!";
+  }
+};
