@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
 import { db } from './firebase';
+import { generateDailyQuote } from './services/geminiService';
 import { 
   collection, 
   addDoc, 
@@ -49,6 +50,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTodo, setNewTodo] = useState('');
   const [isAddingTodo, setIsAddingTodo] = useState(false);
+  const [dailyQuote, setDailyQuote] = useState('Foco, força e fé para conquistar seus objetivos hoje!');
+
+  useEffect(() => {
+    const fetchQuote = async () => {
+      const today = new Date().toDateString();
+      const cachedQuote = localStorage.getItem('daily_quote');
+      const cachedDate = localStorage.getItem('daily_quote_date');
+
+      if (cachedQuote && cachedDate === today) {
+        setDailyQuote(cachedQuote);
+      } else {
+        const quote = await generateDailyQuote();
+        setDailyQuote(quote);
+        localStorage.setItem('daily_quote', quote);
+        localStorage.setItem('daily_quote_date', today);
+      }
+    };
+    fetchQuote();
+  }, []);
 
   // Escutar tarefas do Firebase (Compartilhadas para toda a equipe ADM)
   useEffect(() => {
@@ -128,7 +148,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
         </div>
         <div className="z-10">
           <h2 className="text-purple-900 dark:text-purple-200 text-2xl font-bold italic">
-            "Foco, força e fé para conquistar seus objetivos hoje!"
+            "{dailyQuote}"
           </h2>
           <p className="text-purple-500 dark:text-purple-400 text-sm font-semibold mt-1 tracking-wider uppercase">
             Frase do dia
@@ -139,10 +159,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         
         {/* Lado Esquerdo: Afazeres e Atividades */}
-        <div className="lg:col-span-2 space-y-10">
+        <div className="space-y-10">
           
           {/* Container da Lista de Afazeres */}
           <div className="bg-gray-50/50 dark:bg-zinc-900/30 p-8 rounded-[40px] border border-gray-100 dark:border-zinc-800">
@@ -237,41 +257,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
                 bgColor="bg-purple-50"
                 onClick={() => onNavigate('appointments')}
               />
-            </div>
-          </div>
-        </div>
-
-        {/* Lado Direito: Calendário */}
-        <div className="lg:col-span-1">
-          <h3 className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-sm mb-6">Calendário</h3>
-          <div className="bg-white dark:bg-zinc-800 p-6 rounded-3xl shadow-sm border dark:border-zinc-700">
-            <div className="flex justify-between items-center mb-6">
-              <h4 className="text-gray-500 dark:text-gray-400 font-bold text-sm uppercase">Próximo Mês</h4>
-              <button className="text-purple-600 text-xs font-bold hover:underline">Ver Mais</button>
-            </div>
-            <div className="text-center">
-              <div className="flex justify-between items-center mb-4">
-                 <h5 className="font-bold dark:text-white">Março 2026</h5>
-                 <div className="flex space-x-2">
-                   <button className="text-gray-400 hover:text-purple-600"><i className="fas fa-chevron-left text-xs"></i></button>
-                   <button className="text-gray-400 hover:text-purple-600"><i className="fas fa-chevron-right text-xs"></i></button>
-                 </div>
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'].map(d => (
-                  <span key={d} className="text-[10px] text-gray-400 font-bold mb-2">{d}</span>
-                ))}
-                {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                  <div 
-                    key={day} 
-                    className={`aspect-square flex items-center justify-center text-xs rounded-lg cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors
-                      ${day === 13 ? 'bg-purple-600 text-white font-bold' : 'dark:text-gray-300'}
-                    `}
-                  >
-                    {day}
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
