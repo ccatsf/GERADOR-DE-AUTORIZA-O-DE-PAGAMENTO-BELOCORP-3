@@ -24,8 +24,3 @@ export interface PaymentAuthData {
   quitacaoDate?: string; // Novo campo para Quitação
   beneficiaries: Beneficiary[];
 }
-
-  id: string;
-  name: string;
-  createdAt: number;
-}
