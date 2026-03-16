@@ -311,6 +311,12 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
               </p>
             </div>
 
+            {/* Valor Total — entre o parágrafo e os beneficiários */}
+            <div style={{ border: '1px solid black', padding: '6px 10px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...fontSizeAuthBody }}>
+              <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Valor Total:</span>
+              <span style={{ fontWeight: 'bold' }}>{displayAmount(data.totalAmount)}</span>
+            </div>
+
             <div style={{ ...fontSizeAuthBody }}>
               {data.beneficiaries.map((ben, index) => (
                 <div key={ben.id} style={{ border: '1px solid black', padding: '6px 10px', marginBottom: '6px', backgroundColor: 'white' }}>
@@ -372,10 +378,6 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
             </div>
 
             {/* Valor Total */}
-            <div style={{ border: '1px solid black', padding: '6px 10px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...fontSizeAuthBody }}>
-              <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Valor Total:</span>
-              <span style={{ fontWeight: 'bold' }}>{displayAmount(data.totalAmount)}</span>
-            </div>
             
             <div style={{ marginTop: 'auto', paddingTop: '10px', textAlign: 'right', fontSize: '8pt', fontStyle: 'italic', opacity: 0.8 }}>
               Data de Emissão: {currentDate}
