@@ -6,13 +6,43 @@ import PaymentGenerator from './PaymentGenerator';
 import Appointments from './Appointments';
 import Whiteboard from './Whiteboard';
 import { countActiveClients, getSheetNames, getSpreadsheetData } from './services/googleSheetsService';
+
+// ─── Configuração de meses por usuária ───────────────────────────────────────
+// Rosa = Nickole (belocorp.financeiro3): Jan(0), Mar(2), Mai(4), Jul(6), Set(8), Nov(10)
+// Amarelo = Nayanne (belocorpintermediadora): Fev(1), Abr(3), Jun(5), Ago(7), Out(9), Dez(11)
+const USER_MONTH_CONFIG: Record<string, { months: number[]; color: string; name: string }> = {
+  'belocorp.financeiro3@gmail.com': {
+    months: [0, 2, 4, 6, 8, 10],
+    color: '#f9a8d4', // rosa
+    name: 'Nickole',
+  },
+  'belocorpintermediadora@gmail.com': {
+    months: [1, 3, 5, 7, 9, 11],
+    color: '#fde68a', // amarelo
+    name: 'Nayanne',
+  },
+};
+
+function getUserConfig(email: string | null) {
+  if (!email) return null;
+  const key = Object.keys(USER_MONTH_CONFIG).find(k => email.toLowerCase() === k.toLowerCase());
+  return key ? USER_MONTH_CONFIG[key] : null;
+}
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [accessToken, setAccessToken] = useState<string | null>(() => sessionStorage.getItem('google_access_token'));
   const [clientCount, setClientCount] = useState<number | string>('-');
   const [appointmentDays, setAppointmentDays] = useState<any[]>([]);
-  const [missingDocsCount, setMissingDocsCount] = useState(0);  const [isDarkMode, setIsDarkMode] = useState(() => {
+  const [missingDocsCount, setMissingDocsCount] = useState(0);
+
+  // Mês exibido no calendário — começa no mês atual
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const [calYear,  setCalYear]  = useState(new Date().getFullYear());
+
+  // Config da usuária logada
+  const userConfig = getUserConfig(user?.email ?? null);
+  const ownerMonths = userConfig?.months ?? [];  const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
         (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -152,28 +182,85 @@ const App: React.FC = () => {
           </div>
 
           {/* Mini Calendário na Sidebar */}
-          <div className="bg-zinc-900/50 rounded-3xl p-6 border border-zinc-800 mb-8">
-             <div className="grid grid-cols-7 gap-1 text-center text-[8px] font-bold text-gray-500 mb-4">
-                {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'].map(d => <span key={d}>{d}</span>)}
-             </div>
-             <div className="grid grid-cols-7 gap-1 text-center">
-                {Array.from({ length: 31 }, (_, i) => i + 1).map(day => {
-                  const isAppointmentDay = appointmentDays.includes(day);
-                  const isToday = day === new Date().getDate();
+          <div className="bg-zinc-900/50 rounded-3xl p-4 border border-zinc-800 mb-8">
+            {/* Header do calendário */}
+            <div className="flex items-center justify-between mb-3">
+              <button onClick={() => {
+                const d = new Date(calYear, calMonth - 1, 1);
+                setCalMonth(d.getMonth()); setCalYear(d.getFullYear());
+              }} className="text-gray-400 hover:text-white p-1 rounded transition-colors text-lg">‹</button>
+
+              <div className="text-center">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-300">
+                  {['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][calMonth]} {calYear}
+                </p>
+                {(() => {
+                  // Descobre quem é a dona desse mês
+                  const owner = Object.values(USER_MONTH_CONFIG).find(c => c.months.includes(calMonth));
+                  if (!owner) return null;
+                  const isMe = userConfig?.name === owner.name;
                   return (
-                    <span 
-                      key={day} 
-                      className={`text-[10px] py-1 rounded-lg transition-all ${
-                        isToday ? 'bg-purple-600 text-white font-bold' : 
-                        isAppointmentDay ? 'bg-purple-900/30 text-purple-400 font-bold border border-purple-500/30' : 
-                        'text-gray-400'
-                      }`}
-                    >
-                      {day}
+                    <span className="text-[9px] font-bold uppercase tracking-widest"
+                      style={{ color: owner.color }}>
+                      ● {isMe ? 'Seu mês' : `Mês de ${owner.name}`}
                     </span>
                   );
-                })}
-             </div>
+                })()}
+              </div>
+
+              <button onClick={() => {
+                const d = new Date(calYear, calMonth + 1, 1);
+                setCalMonth(d.getMonth()); setCalYear(d.getFullYear());
+              }} className="text-gray-400 hover:text-white p-1 rounded transition-colors text-lg">›</button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center text-[8px] font-bold text-gray-500 mb-2">
+              {['D','S','T','Q','Q','S','S'].map((d, i) => <span key={i}>{d}</span>)}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {/* Dias em branco antes do dia 1 */}
+              {Array.from({ length: new Date(calYear, calMonth, 1).getDay() }).map((_, i) => (
+                <span key={`e-${i}`} />
+              ))}
+              {Array.from({ length: new Date(calYear, calMonth + 1, 0).getDate() }, (_, i) => i + 1).map(day => {
+                const now = new Date();
+                const isThisMonth = calMonth === now.getMonth() && calYear === now.getFullYear();
+                const isAppointmentDay = isThisMonth && appointmentDays.includes(day);
+                const isToday = isThisMonth && day === now.getDate();
+                // Cor do mês
+                const monthOwner = Object.values(USER_MONTH_CONFIG).find(c => c.months.includes(calMonth));
+                const monthColor = monthOwner?.color ?? '#a78bfa';
+
+                return (
+                  <span key={day}
+                    className="text-[10px] py-1 rounded-lg transition-all font-medium"
+                    style={{
+                      background: isToday ? monthColor : isAppointmentDay ? `${monthColor}33` : 'transparent',
+                      color: isToday ? '#1e293b' : isAppointmentDay ? monthColor : '#6b7280',
+                      fontWeight: isToday || isAppointmentDay ? 700 : 400,
+                      border: isAppointmentDay && !isToday ? `1px solid ${monthColor}66` : 'none',
+                    }}>
+                    {day}
+                  </span>
+                );
+              })}
+            </div>
+
+            {/* Botão: ir para meu mês */}
+            {userConfig && (
+              <button
+                onClick={() => {
+                  const now = new Date();
+                  const next = userConfig.months.find(m => m >= now.getMonth()) ?? userConfig.months[0];
+                  setCalMonth(next); setCalYear(now.getFullYear());
+                }}
+                className="mt-3 w-full text-[9px] font-bold uppercase tracking-widest py-1.5 rounded-xl border transition-colors hover:opacity-80"
+                style={{ color: userConfig.color, borderColor: `${userConfig.color}44`, background: `${userConfig.color}11` }}
+              >
+                Ir para meu mês
+              </button>
+            )}
           </div>
 
           {/* Navegação */}
