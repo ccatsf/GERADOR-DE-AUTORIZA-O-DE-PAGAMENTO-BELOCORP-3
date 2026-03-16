@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { auth, googleProvider } from './firebase';
+import { auth, googleProvider, db } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { Dashboard } from './Dashboard';
 import PaymentGenerator from './PaymentGenerator';
 import Appointments from './Appointments';
 import CRM from './CRM_System/CRM';
-import { countActiveClients, getSheetNames } from './services/googleSheetsService';
+import { countActiveClients, getSheetNames, getSpreadsheetData } from './services/googleSheetsService';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
