@@ -78,73 +78,70 @@ export default function KanbanCard({ card, isDragged, onClick, onDragStart, onDr
       }}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      className={`${bgColorClass} ${borderClass} border-2 p-3 rounded-xl shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing group transition-all duration-200 relative ${card.isDone ? 'opacity-75 bg-blend-overlay bg-slate-50 dark:bg-slate-900' : ''} ${isDragged ? 'opacity-40 scale-[0.98] ring-4 ring-rose-400/60 shadow-none grayscale-[30%]' : ''}`}
+      className={`${bgColorClass} ${borderClass} border p-3 rounded-xl shadow-sm hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-600 cursor-grab active:cursor-grabbing group transition-all duration-200 relative ${card.isDone ? 'opacity-70' : ''} ${isDragged ? 'opacity-50 scale-[0.98] ring-2 ring-purple-400 shadow-none' : ''}`}
     >
-  
+      {card.isDone && <div className="absolute inset-0 bg-white/50 dark:bg-black/50 rounded-xl"></div>}
 
       <div className="flex justify-between items-start gap-2">
         <h3 className={`text-sm font-bold pr-6 w-full ${titleColor}`}>
           {card.title}
         </h3>
-      </div>
-      
-      {/* Barra de Progresso do Checklist */}
-      {hasChecklist && (
-        <div className="mt-2 mb-1 w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
-          <div
-            className={`h-full transition-all duration-500 ${progressPercent === 100 ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-rose-500 dark:bg-rose-400'}`}
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      )}
-
-      {card.planValue && (
-        <div className="flex items-center gap-1 mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 w-fit px-2 py-1 rounded-md">
-           <CurrencyDollarIcon className="w-3.5 h-3.5" />
-           {card.planValue}
-        </div>
-      )}
-
-      {card.images.length > 0 && (
-        <div className="mt-3 rounded-lg overflow-hidden h-24 bg-rose-50 dark:bg-slate-800 border border-rose-100 dark:border-slate-700">
-          <img src={card.images[0]} alt="Cover" className="w-full h-full object-cover" />
-        </div>
-      )}
-
-      <div className="flex items-center justify-between mt-3">
-        <div className="flex items-center flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
-          
-          {card.dueDate && (
-            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${dueDateColor}`}>
-              <CalendarIcon className="w-3.5 h-3.5" />
-              <span>{formattedDate}</span>
-            </div>
-          )}
-
-          {hasChecklist && (
-            <div className={`flex items-center gap-1 ${isChecklistComplete ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 rounded font-medium' : (isOverdue ? 'text-red-700 dark:text-red-400' : '')}`}>
-              <CheckSquareIcon className="w-4 h-4" />
-              <span>{completedChecklistItems}/{totalChecklistItems}</span>
-            </div>
-          )}
-          
-          {card.images.length > 0 && (
-             <div className={`flex items-center gap-1 ${isOverdue ? 'text-red-700 dark:text-red-400' : ''}`}>
-               <ImageIcon className="w-4 h-4" />
-               <span>{card.images.length}</span>
-             </div>
-          )}
-        </div>
-
         <button 
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={toggleDone}
-          className={`shrink-0 p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors ${card.isDone ? 'text-rose-500 dark:text-rose-400' : (isOverdue ? 'text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300' : 'text-slate-300 dark:text-slate-600 hover:text-rose-400 dark:hover:text-rose-400')}`}
-          title={card.isDone ? "Marcar como pendente" : "Marcar como feito"}
+          className={`shrink-0 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors z-10 ${card.isDone ? 'text-purple-600 dark:text-purple-400' : (isOverdue ? 'text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300' : 'text-slate-300 dark:text-slate-500 group-hover:text-purple-500 dark:hover:text-purple-400')}`}
+          title={card.isDone ? "Marcar como pendente" : "Marcar como concluído"}
         >
            <HeartIcon solid={card.isDone} className="w-5 h-5" />
         </button>
+      </div>
+      
+      {card.images.length > 0 && (
+        <div className="mt-2.5 rounded-lg overflow-hidden h-28 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <img src={card.images[0]} alt="Cover" className="w-full h-full object-cover" />
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2.5 mt-3">
+        {card.planValue && (
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 w-fit px-2 py-1 rounded-md">
+             <CurrencyDollarIcon className="w-4 h-4" />
+             <span>{card.planValue}</span>
+          </div>
+        )}
+
+        {hasChecklist && (
+          <div className="flex items-center gap-2 text-xs">
+            <div className={`flex items-center gap-1.5 font-medium ${isChecklistComplete ? 'text-emerald-600 dark:text-emerald-400' : (isOverdue ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400')}`}>
+              <CheckSquareIcon className="w-4 h-4" />
+              <span>{completedChecklistItems}/{totalChecklistItems}</span>
+            </div>
+            <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
+              <div
+                className={`h-full transition-all duration-500 ${isChecklistComplete ? 'bg-emerald-500' : (isOverdue ? 'bg-red-500' : 'bg-purple-500')}`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex items-center flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
+          {card.dueDate && (
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full font-bold text-xs ${dueDateColor}`}>
+              <CalendarIcon className="w-3.5 h-3.5" />
+              <span>{formattedDate}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center -space-x-2">
+          {card.labels.slice(0, 3).map(label => (
+            <div key={label.id} className="w-5 h-5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm" style={{ backgroundColor: label.color }} title={label.name} />
+          ))}
+        </div>
       </div>
     </div>
   );
