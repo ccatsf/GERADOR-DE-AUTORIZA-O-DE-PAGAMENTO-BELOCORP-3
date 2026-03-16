@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ListType, CardType, Id, DragItem } from '../types';
-import { TrashIcon, PlusIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { TrashIcon, PlusIcon } from './Icons';
 import KanbanCard from './KanbanCard';
 
 interface Props {
@@ -21,90 +21,104 @@ interface Props {
   deleteList: (id: Id) => void;
 }
 
-export default function KanbanColumn({ 
-  list, 
-  cards, 
-  draggedItem,
-  onAddCard, 
-  onCardClick, 
-  onDragStart, 
-  onDropOnList,
-  onDragOver,
-  onDragEnd,
-  updateCard,
-  deleteCard,
-  updateList,
-  deleteList 
-}: Props) {
-  
-  const [localTitle, setLocalTitle] = useState(list.title);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+// Miro-style column color palettes
+const COLUMN_PALETTES = [
+  { id: 'rose',    bg: '#fce7f3', header: '#f9a8d4', text: '#9d174d', dot: '#ec4899' },
+  { id: 'violet',  bg: '#ede9fe', header: '#c4b5fd', text: '#5b21b6', dot: '#7c3aed' },
+  { id: 'sky',     bg: '#e0f2fe', header: '#7dd3fc', text: '#0c4a6e', dot: '#0284c7' },
+  { id: 'emerald', bg: '#d1fae5', header: '#6ee7b7', text: '#064e3b', dot: '#059669' },
+  { id: 'amber',   bg: '#fef3c7', header: '#fcd34d', text: '#78350f', dot: '#d97706' },
+  { id: 'slate',   bg: '#f1f5f9', header: '#cbd5e1', text: '#1e293b', dot: '#64748b' },
+];
 
-  useEffect(() => {
-    setLocalTitle(list.title);
-  }, [list.title]);
+function getPalette(theme?: string) {
+  return COLUMN_PALETTES.find(p => p.id === theme) || COLUMN_PALETTES[0];
+}
+
+export default function KanbanColumn({ 
+  list, cards, draggedItem,
+  onAddCard, onCardClick, onDragStart, onDropOnList, onDragOver, onDragEnd,
+  updateCard, deleteCard, updateList, deleteList 
+}: Props) {
+  const [localTitle, setLocalTitle] = useState(list.title);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const palette = getPalette(list.theme);
+
+  useEffect(() => { setLocalTitle(list.title); }, [list.title]);
 
   const handleTitleBlur = () => {
-    if (localTitle.trim() !== list.title) {
+    if (localTitle.trim() !== list.title)
       updateList(list.id, { title: localTitle.trim() || 'Novo Quadro' });
-    }
   };
 
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+  const handleDragOver = (e: React.DragEvent) => {
+    onDragOver(e);
+    setIsDragOver(true);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    setIsDragOver(false);
+    onDropOnList(e, list.id);
   };
 
   return (
-    <div 
+    <div
       draggable
       onDragStart={(e) => onDragStart(e, { type: 'BOARD', id: list.id })}
-      onDragOver={onDragOver}
-      onDrop={(e) => onDropOnList(e, list.id)}
-      className={`flex-1 min-w-[300px] max-w-full bg-slate-50 dark:bg-slate-900/70 rounded-2xl flex flex-col border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300 ease-in-out`}
+      onDragOver={handleDragOver}
+      onDragLeave={() => setIsDragOver(false)}
+      onDrop={handleDrop}
+      style={{ backgroundColor: palette.bg, borderColor: isDragOver ? palette.dot : 'transparent' }}
+      className={`flex flex-col rounded-3xl border-2 transition-all duration-200 shadow-sm min-w-[280px] max-w-full`}
     >
-      {/* Cabeçalho */}
-      <div className={`p-3.5 flex flex-col transition-colors rounded-t-2xl gap-2 border-b-2 ${list.theme ? list.theme.replace('bg', 'border') : 'border-slate-300 dark:border-slate-700'}`}>
-        
-        <div className="flex items-center justify-between w-full">
-          <input 
+      {/* Column Header */}
+      <div
+        style={{ backgroundColor: palette.header }}
+        className="rounded-t-3xl px-4 pt-4 pb-3"
+      >
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <input
             value={localTitle}
             onChange={(e) => setLocalTitle(e.target.value)}
             onBlur={handleTitleBlur}
-            onKeyDown={(e) => {
-               if (e.key === 'Enter') e.currentTarget.blur();
-            }}
-            className="flex-1 min-w-0 font-bold text-slate-800 dark:text-slate-100 bg-transparent outline-none focus:bg-white/50 dark:focus:bg-slate-900/50 focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-500 rounded px-1.5 py-0.5 -ml-1.5 transition-all truncate"
+            onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+            style={{ color: palette.text }}
+            className="flex-1 min-w-0 font-extrabold text-sm uppercase tracking-wide bg-transparent outline-none focus:bg-white/50 rounded px-1 py-0.5 -ml-1 transition-all truncate"
           />
-          <div className="flex items-center gap-1 shrink-0">
-            <button 
-              onClick={(e) => { e.stopPropagation(); deleteList(list.id); }}
-              className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 rounded-lg transition-colors"
-              title="Excluir coluna"
-            >
-              <TrashIcon className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); deleteList(list.id); }}
+            style={{ color: palette.text }}
+            className="p-1.5 rounded-lg hover:bg-black/10 transition-colors opacity-60 hover:opacity-100 shrink-0"
+          >
+            <TrashIcon className="w-3.5 h-3.5" />
+          </button>
         </div>
 
+        {/* Color dots + count */}
         <div className="flex items-center justify-between">
-          <div className="flex gap-1.5 p-1 rounded-full">
-            <button onClick={(e) => { e.stopPropagation(); updateList(list.id, { theme: 'bg-red-200' }); }} className="w-4 h-4 bg-red-300 rounded-full border-2 border-white dark:border-slate-900 shadow-sm hover:scale-110 transition-transform" />
-            <button onClick={(e) => { e.stopPropagation(); updateList(list.id, { theme: 'bg-yellow-200' }); }} className="w-4 h-4 bg-yellow-300 rounded-full border-2 border-white dark:border-slate-900 shadow-sm hover:scale-110 transition-transform" />
-            <button onClick={(e) => { e.stopPropagation(); updateList(list.id, { theme: 'bg-emerald-200' }); }} className="w-4 h-4 bg-emerald-300 rounded-full border-2 border-white dark:border-slate-900 shadow-sm hover:scale-110 transition-transform" />
-            <button onClick={(e) => { e.stopPropagation(); updateList(list.id, { theme: 'bg-blue-200' }); }} className="w-4 h-4 bg-blue-300 rounded-full border-2 border-white dark:border-slate-900 shadow-sm hover:scale-110 transition-transform" />
-            <button onClick={(e) => { e.stopPropagation(); updateList(list.id, { theme: 'bg-purple-200' }); }} className="w-4 h-4 bg-purple-300 rounded-full border-2 border-white dark:border-slate-900 shadow-sm hover:scale-110 transition-transform" />
-            <button onClick={(e) => { e.stopPropagation(); updateList(list.id, { theme: 'bg-rose-200' }); }} className="w-4 h-4 bg-rose-300 rounded-full border-2 border-white dark:border-slate-900 shadow-sm hover:scale-110 transition-transform" />
+          <div className="flex gap-1.5">
+            {COLUMN_PALETTES.map(p => (
+              <button
+                key={p.id}
+                onClick={(e) => { e.stopPropagation(); updateList(list.id, { theme: p.id }); }}
+                style={{ backgroundColor: p.dot }}
+                className={`w-3.5 h-3.5 rounded-full transition-transform hover:scale-125 ${list.theme === p.id ? 'ring-2 ring-offset-1 ring-white/80' : ''}`}
+              />
+            ))}
           </div>
-          <span className="text-xs font-bold text-slate-500/80 dark:text-slate-400/80 uppercase tracking-wider">{cards.length} clientes</span>
+          <span style={{ color: palette.text }} className="text-xs font-bold opacity-60">
+            {cards.length}
+          </span>
         </div>
       </div>
 
-      {/* Conteúdo da Coluna com Scroll Interno */}
-      <div className="p-3 space-y-3 flex-1 overflow-y-auto min-h-[100px]">
+      {/* Cards */}
+      <div className="p-3 space-y-2.5 flex-1 overflow-y-auto min-h-[80px]">
         {cards.map(card => (
-          <KanbanCard 
-            key={card.id} 
-            card={card} 
+          <KanbanCard
+            key={card.id}
+            card={card}
+            columnPalette={palette}
             isDragged={draggedItem?.type === 'CARD' && draggedItem.id === card.id}
             onClick={() => onCardClick(card.id)}
             onDragStart={(e) => onDragStart(e, { type: 'CARD', id: card.id, listId: list.id })}
@@ -114,14 +128,16 @@ export default function KanbanColumn({
           />
         ))}
       </div>
-      
-      <div className="p-3 pt-2 mt-auto border-t border-slate-200 dark:border-slate-800">
-        <button 
+
+      {/* Add button */}
+      <div className="px-3 pb-3 pt-1">
+        <button
           onClick={() => onAddCard(list.id, 'Novo Cliente')}
-          className="w-full py-2.5 flex items-center justify-center gap-2 text-sm font-bold text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg transition-colors"
+          style={{ color: palette.text, borderColor: palette.header }}
+          className="w-full py-2 flex items-center justify-center gap-1.5 text-xs font-bold border-2 border-dashed rounded-2xl hover:bg-black/5 transition-colors"
         >
-          <PlusIcon className="w-5 h-5" /> 
-          <span>Adicionar Cliente</span>
+          <PlusIcon className="w-4 h-4" />
+          Adicionar Cliente
         </button>
       </div>
     </div>
