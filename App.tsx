@@ -173,7 +173,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Mini Calendário na Sidebar */}
-          <div className="bg-zinc-900/50 rounded-3xl p-6 border border-zinc-800">
+          <div className="bg-zinc-900/50 rounded-3xl p-6 border border-zinc-800 mb-8">
              <div className="grid grid-cols-7 gap-1 text-center text-[8px] font-bold text-gray-500 mb-4">
                 {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'].map(d => <span key={d}>{d}</span>)}
              </div>
@@ -196,6 +196,29 @@ const App: React.FC = () => {
                 })}
              </div>
           </div>
+
+          {/* Navegação */}
+          <nav className="flex flex-col gap-2">
+            {[
+              { id: 'dashboard', icon: 'fa-home', label: 'Dashboard' },
+              { id: 'payment', icon: 'fa-file-invoice-dollar', label: 'Gerador' },
+              { id: 'appointments', icon: 'fa-calendar-alt', label: 'Agendamentos' },
+              { id: 'crm', icon: 'fa-heart', label: 'CRM' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/30'
+                    : 'text-gray-400 hover:text-white hover:bg-zinc-800'
+                }`}
+              >
+                <i className={`fas ${tab.icon} w-5 text-center`}></i>
+                <span className="uppercase tracking-widest text-xs">{tab.label}</span>
+              </button>
+            ))}
+          </nav>
         </div>
 
         <button 
@@ -238,7 +261,7 @@ const App: React.FC = () => {
         </header>
 
         {/* Dynamic Content */}
-        <div className="flex-1 overflow-y-auto p-8 lg:p-12">
+        <div className={`flex-1 overflow-hidden ${activeTab === 'crm' ? '' : 'overflow-y-auto p-8 lg:p-12'}`}>
           {activeTab === 'dashboard' ? (
             <Dashboard user={user} onNavigate={setActiveTab} />
           ) : activeTab === 'payment' ? (
@@ -250,7 +273,9 @@ const App: React.FC = () => {
                <Appointments user={user} onBack={() => setActiveTab('dashboard')} onConnect={handleSetAccessToken} />
             </div>
           ) : activeTab === 'crm' ? (
-            <CRM onBack={() => setActiveTab('dashboard')} />
+            <div className="h-full overflow-hidden">
+              <CRM onBack={() => setActiveTab('dashboard')} />
+            </div>
           ) : null}
         </div>
       </main>
