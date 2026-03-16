@@ -314,14 +314,14 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
             <div style={{ ...fontSizeAuthBody }}>
               {data.beneficiaries.map((ben, index) => (
                 <div key={ben.id} style={{ border: '1px solid black', padding: '6px 10px', marginBottom: '6px', backgroundColor: 'white' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #ccc', paddingBottom: '2px', marginBottom: '2px' }}>
-                    <span style={{ fontWeight: 'bold' }}>Beneficiário {index + 1}: </span>
+                  <div style={{ display: 'flex', alignItems: 'baseline', borderBottom: '1px dashed #ccc', paddingBottom: '2px', marginBottom: '2px' }}>
+                    <span style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>Beneficiário {index + 1}: </span>
                     <span 
                       contentEditable 
                       suppressContentEditableWarning
                       onBlur={(e) => handleBeneficiaryBlur(ben.id, 'name', e.currentTarget.textContent || '')}
                       className={editableClass}
-                      style={{ textTransform: 'uppercase', fontWeight: 'bold' }}
+                      style={{ textTransform: 'uppercase', fontWeight: 'bold', marginLeft: '4px' }}
                     >
                       {ben.name || '_________________________'}
                     </span>
