@@ -232,7 +232,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
               title="Gerador de Autorização" 
               color="text-purple-600" 
               bgColor="bg-purple-50"
-              onClick={() => onNavigate('generator')}
+              onClick={() => onNavigate('payment')}
             />
             <ActivityCard 
               icon="fa-calendar-alt" 
