@@ -1,12 +1,16 @@
 
 import React from 'react';
 import { CardType, Id } from '../types';
-import { CheckSquareIcon, ImageIcon, HeartIcon, CalendarIcon, CurrencyDollarIcon } from './Icons';
+import { CheckSquareIcon, HeartIcon, CalendarIcon, CurrencyDollarIcon } from './Icons';
 
-// Add key to Props to avoid TS errors in list rendering
+interface ColumnPalette {
+  bg: string; header: string; text: string; dot: string;
+}
+
 interface KanbanCardProps {
   key?: Id;
   card: CardType;
+  columnPalette: ColumnPalette;
   isDragged?: boolean;
   onClick: () => void;
   onDragStart: (e: React.DragEvent) => void;
@@ -15,134 +19,115 @@ interface KanbanCardProps {
   onDelete: () => void;
 }
 
-export default function KanbanCard({ card, isDragged, onClick, onDragStart, onDragEnd, updateCard, onDelete }: KanbanCardProps) {
-  
-  const totalChecklistItems = card.checklists.reduce((acc, cl) => acc + cl.items.length, 0);
-  const completedChecklistItems = card.checklists.reduce(
-    (acc, cl) => acc + cl.items.filter(item => item.isCompleted).length,
-    0
-  );
-  const hasChecklist = totalChecklistItems > 0;
-  const isChecklistComplete = hasChecklist && totalChecklistItems === completedChecklistItems;
-  const progressPercent = totalChecklistItems === 0 ? 0 : Math.round((completedChecklistItems / totalChecklistItems) * 100);
+export default function KanbanCard({ card, columnPalette, isDragged, onClick, onDragStart, onDragEnd, updateCard }: KanbanCardProps) {
+  const totalItems = card.checklists.reduce((a, cl) => a + cl.items.length, 0);
+  const doneItems  = card.checklists.reduce((a, cl) => a + cl.items.filter(i => i.isCompleted).length, 0);
+  const progress   = totalItems === 0 ? 0 : Math.round((doneItems / totalItems) * 100);
+  const allDone    = totalItems > 0 && doneItems === totalItems;
 
-  const toggleDone = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    updateCard(card.id, { isDone: !card.isDone });
-  };
-
-  let dueDateColor = 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800';
-  let formattedDate = '';
   let isOverdue = false;
-
-  if (card.dueDate) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const [year, month, day] = card.dueDate.split('-').map(Number);
-    const due = new Date(year, month - 1, day);
-    
+  let formattedDate = '';
+  if (card.dueDate && !card.isDone) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const [y,m,d] = card.dueDate.split('-').map(Number);
+    const due = new Date(y, m-1, d);
+    isOverdue = due < today;
     formattedDate = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(due);
-    
-    if (!card.isDone && due < today) {
-       isOverdue = true;
-    }
-
-    if (card.isDone) {
-      dueDateColor = 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50';
-    } else if (isOverdue) {
-      dueDateColor = 'text-white bg-red-600 dark:bg-red-700 font-bold';
-    } else if (due.getTime() === today.getTime()) {
-      dueDateColor = 'text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 font-bold';
-    } else {
-      dueDateColor = 'text-slate-600 dark:text-slate-300 bg-black/5 dark:bg-white/10';
-    }
+  } else if (card.dueDate) {
+    const [y,m,d] = card.dueDate.split('-').map(Number);
+    formattedDate = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' }).format(new Date(y,m-1,d));
   }
 
-  let bgColorClass = card.cardColor || 'bg-white dark:bg-slate-800';
-  let borderClass = 'border-slate-200 dark:border-slate-400';
-  let titleColor = card.isDone ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-800 dark:text-slate-200';
+  const toggleDone = (e: React.MouseEvent) => { e.stopPropagation(); updateCard(card.id, { isDone: !card.isDone }); };
 
-  if (isOverdue) {
-     bgColorClass = 'bg-red-50 dark:bg-red-950/50';
-     borderClass = 'border-red-400 dark:border-red-500 shadow-red-200 dark:shadow-red-900/20 shadow-md';
-     titleColor = 'text-red-900 dark:text-red-400 font-extrabold';
-  }
+  // Card background: use cardColor if set, else white
+  const cardBg = card.cardColor && !card.cardColor.includes('bg-white') ? undefined : '#ffffff';
 
   return (
     <div
       draggable
-      onDragStart={(e) => {
-        e.stopPropagation();
-        onDragStart(e);
-      }}
+      onDragStart={(e) => { e.stopPropagation(); onDragStart(e); }}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      className={`${bgColorClass} ${borderClass} border p-3 rounded-xl shadow-sm hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-600 cursor-grab active:cursor-grabbing group transition-all duration-200 relative ${card.isDone ? 'opacity-70' : ''} ${isDragged ? 'opacity-50 scale-[0.98] ring-2 ring-purple-400 shadow-none' : ''}`}
+      style={{ backgroundColor: cardBg, opacity: isDragged ? 0.5 : 1 }}
+      className={`
+        relative rounded-2xl p-3.5 cursor-grab active:cursor-grabbing
+        border transition-all duration-150 group
+        ${isOverdue ? 'border-red-400 shadow-red-100 shadow-md' : 'border-white/80 hover:border-white shadow-sm hover:shadow-md'}
+        ${card.isDone ? 'opacity-60' : ''}
+        ${isDragged ? 'ring-2 ring-purple-400 scale-[0.97]' : ''}
+        ${!cardBg ? card.cardColor : ''}
+      `}
     >
-      {card.isDone && <div className="absolute inset-0 bg-white/50 dark:bg-black/50 rounded-xl"></div>}
+      {/* Done overlay */}
+      {card.isDone && <div className="absolute inset-0 bg-white/40 rounded-2xl pointer-events-none" />}
 
-      <div className="flex justify-between items-start gap-2">
-        <h3 className={`text-sm font-bold pr-6 w-full ${titleColor}`}>
+      {/* Labels strip */}
+      {card.labels.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {card.labels.map(label => (
+            <span key={label.id} className={`${label.color} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>
+              {label.text}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Title row */}
+      <div className="flex items-start justify-between gap-2">
+        <h3 className={`text-sm font-bold leading-snug flex-1 ${card.isDone ? 'line-through text-slate-400' : isOverdue ? 'text-red-700' : 'text-slate-800'}`}>
           {card.title}
         </h3>
-        <button 
+        <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={toggleDone}
-          className={`shrink-0 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors z-10 ${card.isDone ? 'text-purple-600 dark:text-purple-400' : (isOverdue ? 'text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300' : 'text-slate-300 dark:text-slate-500 group-hover:text-purple-500 dark:hover:text-purple-400')}`}
-          title={card.isDone ? "Marcar como pendente" : "Marcar como concluído"}
+          className={`shrink-0 p-1 rounded-full transition-colors z-10 ${card.isDone ? 'text-rose-500' : 'text-slate-300 group-hover:text-rose-400'}`}
+          title={card.isDone ? 'Desmarcar' : 'Marcar como feito'}
         >
-           <HeartIcon solid={card.isDone} className="w-5 h-5" />
+          <HeartIcon solid={card.isDone} className="w-4 h-4" />
         </button>
       </div>
-      
+
+      {/* Cover image */}
       {card.images.length > 0 && (
-        <div className="mt-2.5 rounded-lg overflow-hidden h-28 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <div className="mt-2.5 rounded-xl overflow-hidden h-24 bg-slate-100">
           <img src={card.images[0]} alt="Cover" className="w-full h-full object-cover" />
         </div>
       )}
 
-      <div className="flex flex-col gap-2.5 mt-3">
+      {/* Meta row */}
+      <div className="flex items-center gap-2 mt-3 flex-wrap">
         {card.planValue && (
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 w-fit px-2 py-1 rounded-md">
-             <CurrencyDollarIcon className="w-4 h-4" />
-             <span>{card.planValue}</span>
-          </div>
+          <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+            <CurrencyDollarIcon className="w-3 h-3" />{card.planValue}
+          </span>
         )}
-
-        {hasChecklist && (
-          <div className="flex items-center gap-2 text-xs">
-            <div className={`flex items-center gap-1.5 font-medium ${isChecklistComplete ? 'text-emerald-600 dark:text-emerald-400' : (isOverdue ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400')}`}>
-              <CheckSquareIcon className="w-4 h-4" />
-              <span>{completedChecklistItems}/{totalChecklistItems}</span>
-            </div>
-            <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
-              <div
-                className={`h-full transition-all duration-500 ${isChecklistComplete ? 'bg-emerald-500' : (isOverdue ? 'bg-red-500' : 'bg-purple-500')}`}
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
+        {card.dueDate && (
+          <span className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
+            card.isDone ? 'bg-emerald-100 text-emerald-700' :
+            isOverdue   ? 'bg-red-500 text-white' :
+                          'bg-slate-100 text-slate-600'
+          }`}>
+            <CalendarIcon className="w-3 h-3" />{formattedDate}
+          </span>
         )}
       </div>
 
-      <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-        <div className="flex items-center flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
-          {card.dueDate && (
-            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full font-bold text-xs ${dueDateColor}`}>
-              <CalendarIcon className="w-3.5 h-3.5" />
-              <span>{formattedDate}</span>
-            </div>
-          )}
+      {/* Checklist progress */}
+      {totalItems > 0 && (
+        <div className="mt-2.5 flex items-center gap-2">
+          <span className={`text-[10px] font-bold ${allDone ? 'text-emerald-600' : 'text-slate-500'}`}>
+            <CheckSquareIcon className="w-3 h-3 inline mr-0.5" />{doneItems}/{totalItems}
+          </span>
+          <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-500 rounded-full ${allDone ? 'bg-emerald-500' : isOverdue ? 'bg-red-400' : 'bg-rose-400'}`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
         </div>
-
-        <div className="flex items-center -space-x-2">
-          {card.labels.slice(0, 3).map(label => (
-            <div key={label.id} className="w-5 h-5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm" style={{ backgroundColor: label.color }} title={label.name} />
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
