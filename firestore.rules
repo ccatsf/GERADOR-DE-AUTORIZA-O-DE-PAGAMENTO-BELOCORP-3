@@ -39,6 +39,13 @@ service cloud.firestore {
       allow create, update: if isAuthenticated();
       allow delete: if isAdmin();
     }
+
+    match /crm-cards/{cardId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /todos/{todoId} {
+      allow read, write: if isAuthenticated();
+    }
   }
 }
-
