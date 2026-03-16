@@ -312,8 +312,8 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
             </div>
 
             {/* Valor Total — entre o parágrafo e os beneficiários */}
-            <div style={{ border: '1px solid black', padding: '6px 10px', marginBottom: '8px', display: 'flex', justifyContent: , alignItems: 'center', ...fontSizeAuthBody }}>
-              <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Valor Total:</span>
+            <div style={{ border: '1px solid black', padding: '6px 10px', marginBottom: '8px', ...fontSizeAuthBody }}>
+              <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Valor Total: </span>
               <span style={{ fontWeight: 'bold' }}>{displayAmount(data.totalAmount)}</span>
             </div>
 
