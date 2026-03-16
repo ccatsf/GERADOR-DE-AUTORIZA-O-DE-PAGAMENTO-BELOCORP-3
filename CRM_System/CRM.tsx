@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { db } from '../firebase';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { CardType, ListType, Id, DragItem, QueueItem, Label, Workspace } from './types';
 import { INITIAL_LISTS, INITIAL_CARDS, DEFAULT_LABELS, generateId } from './constants';
@@ -24,18 +26,38 @@ interface CRMProps {
 }
 
 export default function CRM({ onBack }: CRMProps) {
-  const [workspaces, setWorkspaces] = useLocalStorage<Workspace[]>('crm-workspaces', [{ id: 'default', name: 'Controle Principal', createdAt: Date.now() }]);
+  const [lists, setLists] = useLocalStorage<ListType[]>('crm-lists', INITIAL_LISTS);
+  const [cards, setCards] = useState<CardType[]>([]);
+  const [workspaces, setWorkspaces] = useLocalStorage<Workspace[]>('crm-workspaces', [{ id: 'default', name: 'Controle Principal' }]);
+
+  // Sincronizar cards com Firebase
+  useEffect(() => {
+    const q = query(collection(db, 'crm-cards'), orderBy('createdAt', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const firebaseCards: CardType[] = [];
+      snapshot.forEach((doc) => {
+        firebaseCards.push({ id: doc.id, ...doc.data() } as CardType);
+      });
+      setCards(firebaseCards);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const saveCardToFirebase = async (card: CardType) => {
+    const { id, ...data } = card;
+    await setDoc(doc(db, 'crm-cards', id.toString()), data);
+  };
+
+  const deleteCardFromFirebase = async (cardId: Id) => {
+    await deleteDoc(doc(db, 'crm-cards', cardId.toString()));
+  };
+
   const [activeWorkspaceId, setActiveWorkspaceId] = useLocalStorage<string>('crm-active-workspace', 'default');
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const listsKey = activeWorkspaceId === 'default' ? 'crm-lists' : `crm-lists-${activeWorkspaceId}`;
-  const cardsKey = activeWorkspaceId === 'default' ? 'crm-cards' : `crm-cards-${activeWorkspaceId}`;
   const notesKey = activeWorkspaceId === 'default' ? 'crm-notes' : `crm-notes-${activeWorkspaceId}`;
   const queueKey = activeWorkspaceId === 'default' ? 'crm-queue' : `crm-queue-${activeWorkspaceId}`;
-
-  const [lists, setLists] = useLocalStorage<ListType[]>(listsKey, INITIAL_LISTS);
-  const [cards, setCards] = useLocalStorage<CardType[]>(cardsKey, INITIAL_CARDS);
   const [globalNotes, setGlobalNotes] = useLocalStorage<string>(notesKey, '');
   const [contractQueue, setContractQueue] = useLocalStorage<QueueItem[]>(queueKey, []);
   
@@ -258,7 +280,7 @@ export default function CRM({ onBack }: CRMProps) {
   const addCard = useCallback((listId: Id, title: string) => {
     takeSnapshot();
     const newId = generateId();
-    setCards(prev => [...prev, { 
+    const newCard = { 
       id: newId, 
       listId, 
       title, 
@@ -269,12 +291,24 @@ export default function CRM({ onBack }: CRMProps) {
       isDone: false, 
       cardColor: 'bg-white dark:bg-slate-800', 
       createdAt: Date.now() 
-    }]);
+    };
+    saveCardToFirebase(newCard);
     setActiveCardId(newId);
-  }, [setCards, takeSnapshot]);
+  }, [takeSnapshot]);
 
-  const updateCard = useCallback((cardId: Id, updates: Partial<CardType>) => { takeSnapshot(); setCards(prev => prev.map(card => card.id === cardId ? { ...card, ...updates } : card)); }, [setCards, takeSnapshot]);
-  const deleteCard = useCallback((cardId: Id) => { takeSnapshot(); setCards(prev => prev.filter(card => card.id !== cardId)); setActiveCardId(null); }, [setCards, takeSnapshot]);
+  const updateCard = useCallback((cardId: Id, updates: Partial<CardType>) => {
+    takeSnapshot();
+    const card = cards.find(c => c.id === cardId);
+    if (card) {
+      saveCardToFirebase({ ...card, ...updates });
+    }
+  }, [cards, takeSnapshot]);
+
+  const deleteCard = useCallback((cardId: Id) => {
+    takeSnapshot();
+    deleteCardFromFirebase(cardId);
+    setActiveCardId(null);
+  }, [takeSnapshot]);
 
   const handleDragStart = (e: React.DragEvent, item: DragItem) => {
     setDraggedItem(item);
@@ -302,12 +336,10 @@ export default function CRM({ onBack }: CRMProps) {
     } else if (item.type === 'CARD') {
       if (item.listId !== targetListId) {
         takeSnapshot();
-        setCards(prev => {
-          const newCards = [...prev];
-          const cIdx = newCards.findIndex(c => c.id === item?.id);
-          if (cIdx > -1) { const [card] = newCards.splice(cIdx, 1); card.listId = targetListId; newCards.push(card); }
-          return newCards;
-        });
+        const card = cards.find(c => c.id === item?.id);
+        if (card) {
+          saveCardToFirebase({ ...card, listId: targetListId });
+        }
       }
     }
     setDraggedItem(null);
