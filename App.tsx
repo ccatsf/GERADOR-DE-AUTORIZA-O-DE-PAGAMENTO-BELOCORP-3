@@ -8,17 +8,17 @@ import Whiteboard from './Whiteboard';
 import { countActiveClients, getSheetNames, getSpreadsheetData } from './services/googleSheetsService';
 
 // ─── Configuração de meses por usuária ───────────────────────────────────────
-// Rosa = Isabel (belocorp.financeiro3): Jan(0), Mar(2), Mai(4), Jul(6), Set(8), Nov(10)
+// Rosa = Nickole (belocorp.financeiro3): Jan(0), Mar(2), Mai(4), Jul(6), Set(8), Nov(10)
 // Amarelo = Nayanne (belocorpintermediadora): Fev(1), Abr(3), Jun(5), Ago(7), Out(9), Dez(11)
 const USER_MONTH_CONFIG: Record<string, { months: number[]; color: string; name: string }> = {
   'belocorp.financeiro3@gmail.com': {
     months: [0, 2, 4, 6, 8, 10],
-    color: '#f9a8d4', // azul
-    name: 'Isabel',
+    color: '#f9a8d4', // rosa
+    name: 'Nickole',
   },
   'belocorpintermediadora@gmail.com': {
     months: [1, 3, 5, 7, 9, 11],
-    color: '#fde68a', // lilás
+    color: '#fde68a', // amarelo
     name: 'Nayanne',
   },
 };
@@ -33,7 +33,9 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [accessToken, setAccessToken] = useState<string | null>(() => sessionStorage.getItem('google_access_token'));
   const [clientCount, setClientCount] = useState<number | string>('-');
-  const [appointmentDays, setAppointmentDays] = useState<any[]>([]);
+  // Map: dia do mês → { count: nº de pagamentos, total: soma dos valores }
+  const [appointmentDays, setAppointmentDays] = useState<Map<number, { count: number; total: number }>>(new Map());
+  const [selectedCalDay, setSelectedCalDay] = useState<number | null>(null);
   const [missingDocsCount, setMissingDocsCount] = useState(0);
 
   // Mês exibido no calendário — começa no mês atual
@@ -88,7 +90,6 @@ const App: React.FC = () => {
     const fetchClientCount = async () => {
       if (accessToken) {
         try {
-          const { getSpreadsheetData } = await import('./services/googleSheetsService');
           const names = await getSheetNames(accessToken);
           const now = new Date();
           const months = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
@@ -101,17 +102,21 @@ const App: React.FC = () => {
 
             // Buscar dados para o calendário
             const data = await getSpreadsheetData(matchingSheet, accessToken);
-            const dayMap = new Map<number, boolean>();
+            const dayMap = new Map<number, { count: number; total: number }>();
             data.forEach(row => {
               const paymentDate = row[2]; // Coluna C (DD/MM/YYYY)
               if (paymentDate) {
                 const [d, m, y] = paymentDate.split('/').map(Number);
                 if (m === now.getMonth() + 1 && y === now.getFullYear()) {
-                  dayMap.set(d, true);
+                  const existing = dayMap.get(d) ?? { count: 0, total: 0 };
+                  // Coluna E (índice 4) = valor, limpa "R$", ".", ","
+                  const rawVal = (row[4] ?? '').toString().replace(/[R$\s.]/g, '').replace(',', '.');
+                  const val = parseFloat(rawVal) || 0;
+                  dayMap.set(d, { count: existing.count + 1, total: existing.total + val });
                 }
               }
             });
-            setAppointmentDays(Array.from(dayMap.keys()));
+            setAppointmentDays(dayMap);
           }
         } catch (error) {
           console.error("Erro ao buscar dados da planilha:", error);
@@ -188,6 +193,7 @@ const App: React.FC = () => {
               <button onClick={() => {
                 const d = new Date(calYear, calMonth - 1, 1);
                 setCalMonth(d.getMonth()); setCalYear(d.getFullYear());
+                setSelectedCalDay(null);
               }} className="text-gray-400 hover:text-white p-1 rounded transition-colors text-lg">‹</button>
 
               <div className="text-center">
@@ -211,6 +217,7 @@ const App: React.FC = () => {
               <button onClick={() => {
                 const d = new Date(calYear, calMonth + 1, 1);
                 setCalMonth(d.getMonth()); setCalYear(d.getFullYear());
+                setSelectedCalDay(null);
               }} className="text-gray-400 hover:text-white p-1 rounded transition-colors text-lg">›</button>
             </div>
 
@@ -226,20 +233,26 @@ const App: React.FC = () => {
               {Array.from({ length: new Date(calYear, calMonth + 1, 0).getDate() }, (_, i) => i + 1).map(day => {
                 const now = new Date();
                 const isThisMonth = calMonth === now.getMonth() && calYear === now.getFullYear();
-                const isAppointmentDay = isThisMonth && appointmentDays.includes(day);
+                const dayData = isThisMonth ? appointmentDays.get(day) : undefined;
+                const isAppointmentDay = !!dayData;
                 const isToday = isThisMonth && day === now.getDate();
+                const isSelected = selectedCalDay === day && isThisMonth;
                 // Cor do mês
                 const monthOwner = Object.values(USER_MONTH_CONFIG).find(c => c.months.includes(calMonth));
                 const monthColor = monthOwner?.color ?? '#a78bfa';
 
                 return (
                   <span key={day}
-                    className="text-[10px] py-1 rounded-lg transition-all font-medium"
+                    onClick={() => {
+                      if (isThisMonth) setSelectedCalDay(selectedCalDay === day ? null : day);
+                    }}
+                    className="text-[10px] py-1 rounded-lg transition-all font-medium cursor-pointer"
                     style={{
-                      background: isToday ? monthColor : isAppointmentDay ? `${monthColor}33` : 'transparent',
-                      color: isToday ? '#1e293b' : isAppointmentDay ? monthColor : '#6b7280',
-                      fontWeight: isToday || isAppointmentDay ? 700 : 400,
-                      border: isAppointmentDay && !isToday ? `1px solid ${monthColor}66` : 'none',
+                      background: isSelected ? monthColor : isToday ? monthColor : isAppointmentDay ? `${monthColor}33` : 'transparent',
+                      color: isSelected || isToday ? '#1e293b' : isAppointmentDay ? monthColor : '#6b7280',
+                      fontWeight: isToday || isAppointmentDay || isSelected ? 700 : 400,
+                      border: isSelected ? `2px solid ${monthColor}` : isAppointmentDay && !isToday ? `1px solid ${monthColor}66` : 'none',
+                      outline: isSelected ? `2px solid ${monthColor}88` : 'none',
                     }}>
                     {day}
                   </span>
@@ -261,6 +274,42 @@ const App: React.FC = () => {
                 Ir para meu mês
               </button>
             )}
+
+            {/* Popup: info do dia selecionado */}
+            {(() => {
+              const now = new Date();
+              const isThisMonth = calMonth === now.getMonth() && calYear === now.getFullYear();
+              if (!selectedCalDay || !isThisMonth) return null;
+              const monthOwner = Object.values(USER_MONTH_CONFIG).find(c => c.months.includes(calMonth));
+              const monthColor = monthOwner?.color ?? '#a78bfa';
+              const dayData = appointmentDays.get(selectedCalDay);
+
+              return (
+                <div className="mt-3 rounded-2xl p-3 border text-center animate-fadeIn"
+                  style={{ background: `${monthColor}15`, borderColor: `${monthColor}44` }}>
+                  <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: monthColor }}>
+                    {String(selectedCalDay).padStart(2,'0')}/{String(calMonth+1).padStart(2,'0')}/{calYear}
+                  </p>
+                  {!accessToken ? (
+                    <p className="text-[9px] text-gray-500">Conecte em Agendamentos para ver dados</p>
+                  ) : dayData ? (
+                    <>
+                      <p className="text-lg font-black" style={{ color: monthColor }}>{dayData.count}</p>
+                      <p className="text-[9px] text-gray-400 uppercase tracking-widest">
+                        {dayData.count === 1 ? 'pagamento' : 'pagamentos'}
+                      </p>
+                      {dayData.total > 0 && (
+                        <p className="text-[10px] font-bold mt-1" style={{ color: monthColor }}>
+                          R$ {dayData.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-[9px] text-gray-500">Nenhum pagamento neste dia</p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Navegação */}
