@@ -56,9 +56,6 @@ const App: React.FC = () => {
     });
 
     // Escutar CRM para notificações de documentos faltando
-    const { db } = import('./firebase');
-    const { collection, onSnapshot } = import('firebase/firestore');
-    
     const unsubCRM = onSnapshot(collection(db, 'crm-cards'), (snapshot: any) => {
       let missing = 0;
       snapshot.forEach((doc: any) => {
