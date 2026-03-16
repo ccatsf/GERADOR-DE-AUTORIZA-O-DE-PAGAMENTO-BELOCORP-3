@@ -10,8 +10,10 @@ import { countActiveClients, getSheetNames } from './services/googleSheetsServic
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(() => sessionStorage.getItem('google_access_token'));
   const [clientCount, setClientCount] = useState<number | string>('-');
+  const [appointmentDays, setAppointmentDays] = useState<any[]>([]);
+  const [missingDocsCount, setMissingDocsCount] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
@@ -19,6 +21,23 @@ const App: React.FC = () => {
     }
     return false;
   });
+
+  // Salvar token do Google no sessionStorage para persistir na sessão
+  useEffect(() => {
+    const savedToken = sessionStorage.getItem('google_access_token');
+    if (savedToken) {
+      setAccessToken(savedToken);
+    }
+  }, []);
+
+  const handleSetAccessToken = (token: string | null) => {
+    setAccessToken(token);
+    if (token) {
+      sessionStorage.setItem('google_access_token', token);
+    } else {
+      sessionStorage.removeItem('google_access_token');
+    }
+  };
 
   useEffect(() => {
     if (isDarkMode) {
@@ -34,13 +53,35 @@ const App: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-    return () => unsubscribe();
+
+    // Escutar CRM para notificações de documentos faltando
+    const { db } = require('./firebase');
+    const { collection, onSnapshot } = require('firebase/firestore');
+    
+    const unsubCRM = onSnapshot(collection(db, 'crm-cards'), (snapshot: any) => {
+      let missing = 0;
+      snapshot.forEach((doc: any) => {
+        const card = doc.data();
+        // Verificar se algum item de checklist não está completo
+        const hasMissing = card.checklists?.some((cl: any) => 
+          cl.items?.some((item: any) => !item.isCompleted)
+        );
+        if (hasMissing) missing++;
+      });
+      setMissingDocsCount(missing);
+    });
+
+    return () => {
+      unsubscribe();
+      unsubCRM();
+    };
   }, []);
 
   useEffect(() => {
     const fetchClientCount = async () => {
       if (accessToken) {
         try {
+          const { getSpreadsheetData } = await import('./services/googleSheetsService');
           const names = await getSheetNames(accessToken);
           const now = new Date();
           const months = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
@@ -50,9 +91,23 @@ const App: React.FC = () => {
           if (matchingSheet) {
             const count = await countActiveClients(matchingSheet, accessToken);
             setClientCount(count);
+
+            // Buscar dados para o calendário
+            const data = await getSpreadsheetData(matchingSheet, accessToken);
+            const dayMap = new Map<number, boolean>();
+            data.forEach(row => {
+              const paymentDate = row[2]; // Coluna C (DD/MM/YYYY)
+              if (paymentDate) {
+                const [d, m, y] = paymentDate.split('/').map(Number);
+                if (m === now.getMonth() + 1 && y === now.getFullYear()) {
+                  dayMap.set(d, true);
+                }
+              }
+            });
+            setAppointmentDays(Array.from(dayMap.keys()));
           }
         } catch (error) {
-          console.error("Erro ao buscar contagem de clientes:", error);
+          console.error("Erro ao buscar dados da planilha:", error);
         }
       }
     };
@@ -125,14 +180,22 @@ const App: React.FC = () => {
                 {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'].map(d => <span key={d}>{d}</span>)}
              </div>
              <div className="grid grid-cols-7 gap-1 text-center">
-                {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                  <span 
-                    key={day} 
-                    className={`text-[10px] py-1 rounded-lg ${day === 13 ? 'bg-purple-600 text-white font-bold' : 'text-gray-400'}`}
-                  >
-                    {day}
-                  </span>
-                ))}
+                {Array.from({ length: 31 }, (_, i) => i + 1).map(day => {
+                  const isAppointmentDay = appointmentDays.includes(day);
+                  const isToday = day === new Date().getDate();
+                  return (
+                    <span 
+                      key={day} 
+                      className={`text-[10px] py-1 rounded-lg transition-all ${
+                        isToday ? 'bg-purple-600 text-white font-bold' : 
+                        isAppointmentDay ? 'bg-purple-900/30 text-purple-400 font-bold border border-purple-500/30' : 
+                        'text-gray-400'
+                      }`}
+                    >
+                      {day}
+                    </span>
+                  );
+                })}
              </div>
           </div>
         </div>
@@ -162,9 +225,13 @@ const App: React.FC = () => {
             <button onClick={() => setIsDarkMode(!isDarkMode)} className="text-gray-400 hover:text-purple-500 transition-colors">
               <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'} text-xl`}></i>
             </button>
-            <div className="relative cursor-pointer group">
+            <div className="relative cursor-pointer group" onClick={() => setActiveTab('crm')}>
               <i className="fas fa-bell text-gray-400 text-xl group-hover:text-purple-500 transition-colors"></i>
-              <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-[8px] font-bold px-1 rounded-full border-2 border-black lg:border-gray-50 dark:lg:border-zinc-950">2</span>
+              {missingDocsCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-[8px] font-bold px-1 rounded-full border-2 border-black lg:border-gray-50 dark:lg:border-zinc-950">
+                  {missingDocsCount}
+                </span>
+              )}
             </div>
             <div className="w-10 h-10 rounded-full bg-zinc-800 lg:bg-zinc-200 dark:lg:bg-zinc-800 flex items-center justify-center cursor-pointer border-2 border-transparent hover:border-purple-500 transition-all overflow-hidden">
               <img src={user.photoURL || ''} alt="" className="w-full h-full object-cover" />
@@ -182,7 +249,7 @@ const App: React.FC = () => {
             </div>
           ) : activeTab === 'appointments' ? (
             <div className="animate-fadeIn">
-               <Appointments user={user} onBack={() => setActiveTab('dashboard')} onConnect={setAccessToken} />
+               <Appointments user={user} onBack={() => setActiveTab('dashboard')} onConnect={handleSetAccessToken} />
             </div>
           ) : activeTab === 'crm' ? (
             <CRM onBack={() => setActiveTab('dashboard')} />
