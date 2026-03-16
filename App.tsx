@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { auth, googleProvider, db } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { collection, onSnapshot } from 'firebase/firestore';
 import { Dashboard } from './Dashboard';
 import PaymentGenerator from './PaymentGenerator';
 import Appointments from './Appointments';
 import CRM from './CRM_System/CRM';
+import Whiteboard from './Whiteboard';
 import { countActiveClients, getSheetNames, getSpreadsheetData } from './services/googleSheetsService';
-
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [accessToken, setAccessToken] = useState<string | null>(() => sessionStorage.getItem('google_access_token'));
   const [clientCount, setClientCount] = useState<number | string>('-');
   const [appointmentDays, setAppointmentDays] = useState<any[]>([]);
-  const [missingDocsCount, setMissingDocsCount] = useState(0);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
+  const [missingDocsCount, setMissingDocsCount] = useState(0);  const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
         (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -54,28 +52,8 @@ const App: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (!user) return;
-
-    // Escutar CRM para notificações de documentos faltando
-    const unsubCRM = onSnapshot(collection(db, 'crm-cards'), (snapshot: any) => {
-      let missing = 0;
-      snapshot.forEach((doc: any) => {
-        const card = doc.data();
-        const hasMissing = card.checklists?.some((cl: any) => 
-          cl.items?.some((item: any) => !item.isCompleted)
-        );
-        if (hasMissing) missing++;
-      });
-      setMissingDocsCount(missing);
-    });
-
-    return () => unsubCRM();
-  }, [user]);
 
   useEffect(() => {
     const fetchClientCount = async () => {
@@ -202,10 +180,10 @@ const App: React.FC = () => {
           {/* Navegação */}
           <nav className="flex flex-col gap-2">
             {[
-              { id: 'dashboard', icon: 'fa-home', label: 'Dashboard' },
-              { id: 'payment', icon: 'fa-file-invoice-dollar', label: 'Gerador' },
-              { id: 'appointments', icon: 'fa-calendar-alt', label: 'Agendamentos' },
-              { id: 'crm', icon: 'fa-heart', label: 'CRM' },
+              { id: 'dashboard',    icon: 'fa-home',                label: 'Dashboard' },
+              { id: 'payment',      icon: 'fa-file-invoice-dollar', label: 'Gerador' },
+              { id: 'appointments', icon: 'fa-calendar-alt',        label: 'Agendamentos' },
+              { id: 'whiteboard',   icon: 'fa-chalkboard',          label: 'Quadro' },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -242,7 +220,7 @@ const App: React.FC = () => {
              <h1 className="text-white text-xs font-bold tracking-widest">ADM BELOCORP</h1>
           </div>
           <h2 className="text-white lg:text-black dark:lg:text-white text-xl font-black uppercase tracking-[0.3em] mx-auto lg:ml-0 lg:mr-auto">
-            {activeTab === 'dashboard' ? 'DASHBOARD' : activeTab === 'payment' ? 'GERADOR' : activeTab === 'appointments' ? 'AGENDAMENTOS' : 'CRM'}
+            {activeTab === 'dashboard' ? 'DASHBOARD' : activeTab === 'payment' ? 'GERADOR' : activeTab === 'appointments' ? 'AGENDAMENTOS' : 'QUADRO'}
           </h2>
           <div className="flex items-center space-x-6">
             <button onClick={() => setIsDarkMode(!isDarkMode)} className="text-gray-400 hover:text-purple-500 transition-colors">
@@ -263,7 +241,7 @@ const App: React.FC = () => {
         </header>
 
         {/* Dynamic Content */}
-        <div className={`flex-1 overflow-hidden ${activeTab === 'crm' ? '' : 'overflow-y-auto p-8 lg:p-12'}`}>
+        <div className={`flex-1 overflow-hidden ${activeTab === 'whiteboard' ? '' : 'overflow-y-auto p-8 lg:p-12'}`}>
           {activeTab === 'dashboard' ? (
             <Dashboard user={user} onNavigate={setActiveTab} />
           ) : activeTab === 'payment' ? (
@@ -274,9 +252,9 @@ const App: React.FC = () => {
             <div className="animate-fadeIn">
                <Appointments user={user} onBack={() => setActiveTab('dashboard')} onConnect={handleSetAccessToken} />
             </div>
-          ) : activeTab === 'crm' ? (
+          ) : activeTab === 'whiteboard' ? (
             <div className="h-full overflow-hidden">
-              <CRM onBack={() => setActiveTab('dashboard')} />
+              <Whiteboard onBack={() => setActiveTab('dashboard')} />
             </div>
           ) : null}
         </div>
