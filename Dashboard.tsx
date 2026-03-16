@@ -222,10 +222,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
           <div className="grid grid-cols-1 gap-4">
             <ActivityCard 
               icon="fa-file-alt" 
-              title="CRM - Captação de Docs" 
+              title="Quadro de Afazeres" 
               color="text-purple-600" 
               bgColor="bg-purple-50"
-              onClick={() => onNavigate('crm')}
+              onClick={() => onNavigate('whiteboard')}
             />
             <ActivityCard 
               icon="fa-shield-alt" 
