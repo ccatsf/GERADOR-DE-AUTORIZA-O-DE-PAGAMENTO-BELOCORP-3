@@ -73,6 +73,17 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
 
   const editableClass = "hover:bg-blue-50 focus:bg-blue-100 outline-none transition-colors cursor-text rounded";
 
+  // Função para agrupar beneficiários em páginas (5 por página)
+  const groupBeneficiariesByPage = (beneficiaries: Beneficiary[], perPage: number = 5) => {
+    const pages = [];
+    for (let i = 0; i < beneficiaries.length; i += perPage) {
+      pages.push(beneficiaries.slice(i, i + perPage));
+    }
+    return pages;
+  };
+
+  const beneficiaryPages = groupBeneficiariesByPage(data.beneficiaries);
+
   return (
     <div className="a4-preview-wrapper flex flex-col items-center space-y-12 pb-20">
       <div className="no-print bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 px-4 py-2 rounded-full text-xs font-bold shadow-sm flex items-center space-x-2 animate-bounce">
@@ -355,251 +366,267 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
             </div>
           </div>
 
-          {/* PÁGINA 2: DOCUMENTO DE AUTORIZAÇÃO (LETRAS DIMINUÍDAS) */}
-          <div
-            id="autorizacao-documento"
-            className="a4-page-shadow text-black"
-            style={{
-              fontFamily: 'Arial, Helvetica, sans-serif',
-              color: '#000',
-              padding: '12mm 15mm',
-              backgroundColor: 'white',
-              boxSizing: 'border-box',
-              width: '210mm',
-              minHeight: '297mm',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-          >
-            <div style={{ border: '2px solid black', padding: '10px', marginBottom: '15px' }}>
-              <h2 
-                contentEditable 
-                suppressContentEditableWarning
-                onBlur={(e) => handleBlur('authTitle', e.currentTarget.textContent || '')}
-                className={editableClass}
-                style={{ ...fontSizeAuthHeader, fontWeight: 'bold', margin: 0, textAlign: 'center', textTransform: 'uppercase' }}
-              >
-                {data.authTitle || 'AUTORIZAÇÃO DE PAGAMENTO – CLIENTE'}
-              </h2>
-            </div>
-
-            {/* Parágrafo principal - COMPLETAMENTE EDITÁVEL */}
-            <div style={{ 
-              border: '2px solid black', 
-              padding: '15px', 
-              marginBottom: '15px', 
-              ...fontSizeAuthBody, 
-              lineHeight: '1.5', 
-              textAlign: 'left',
-              backgroundColor: 'white'
-            }}>
-              <p 
-                contentEditable 
-                suppressContentEditableWarning
-                onBlur={(e) => handleBlur('authParagraph', e.currentTarget.textContent || '')}
-                className={editableClass}
-                style={{ margin: 0, wordBreak: 'normal', whiteSpace: 'normal' }}
-              >
-                {data.authParagraph || `EU, ${data.clientName || '__________________________________________________'}, PORTADOR (A) DO CPF: ${data.clientCpf || '__________________'}, AUTORIZO A EMPRESA BELOGROUP INTERMEDIADORA DE SERVIÇOS LTDA – CNPJ: 27.246.092/0001-40 A UTILIZAR O CRÉDITO REFERENTE AO MEU CONTRATO N°. ${data.contractNumber || '__________'} PARA EFETUAR O PAGAMENTO PARA OS SEGUINTES BENEFICIÁRIOS:`}
-              </p>
-            </div>
-
-            {/* Valor Total — entre o parágrafo e os beneficiários */}
-            <div style={{ border: '1px solid black', padding: '6px 10px', marginBottom: '8px', ...fontSizeAuthBody }}>
-              <span 
-                contentEditable 
-                suppressContentEditableWarning
-                onBlur={(e) => handleBlur('valorTotalLabel', e.currentTarget.textContent || '')}
-                className={editableClass}
-                style={{ fontWeight: 'bold', textTransform: 'uppercase' }}
-              >
-                {data.valorTotalLabel || 'Valor Total:'}
-              </span>
-              &nbsp;
-              <span style={{ fontWeight: 'bold' }}>{displayAmount(data.totalAmount)}</span>
-            </div>
-
-            <div style={{ ...fontSizeAuthBody }}>
-              {data.beneficiaries.map((ben, index) => (
-                <div key={ben.id} style={{ border: '1px solid black', padding: '6px 10px', marginBottom: '6px', backgroundColor: 'white' }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', borderBottom: '1px dashed #ccc', paddingBottom: '2px', marginBottom: '2px' }}>
-                    <span 
+          {/* PÁGINAS DE AUTORIZAÇÃO - UMA POR PÁGINA (MAX 5 BENEFICIÁRIOS POR PÁGINA) */}
+          {beneficiaryPages.map((pagebeneficiaries, pageIndex) => (
+            <div
+              key={pageIndex}
+              id={`autorizacao-documento-${pageIndex}`}
+              className="a4-page-shadow text-black"
+              style={{
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                color: '#000',
+                padding: '12mm 15mm',
+                backgroundColor: 'white',
+                boxSizing: 'border-box',
+                width: '210mm',
+                minHeight: '297mm',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              {pageIndex === 0 && (
+                <>
+                  <div style={{ border: '2px solid black', padding: '10px', marginBottom: '15px' }}>
+                    <h2 
                       contentEditable 
                       suppressContentEditableWarning
-                      onBlur={(e) => handleBlur('beneficiaryLabel', e.currentTarget.textContent || '')}
+                      onBlur={(e) => handleBlur('authTitle', e.currentTarget.textContent || '')}
                       className={editableClass}
-                      style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}
+                      style={{ ...fontSizeAuthHeader, fontWeight: 'bold', margin: 0, textAlign: 'center', textTransform: 'uppercase' }}
                     >
-                      {data.beneficiaryLabel || `Beneficiário ${index + 1}:`}
-                    </span>
-                    <span 
-                      contentEditable 
-                      suppressContentEditableWarning
-                      onBlur={(e) => handleBeneficiaryBlur(ben.id, 'name', e.currentTarget.textContent || '')}
-                      className={editableClass}
-                      style={{ textTransform: 'uppercase', fontWeight: 'bold', marginLeft: '4px' }}
-                    >
-                      {ben.name || '_________________________'}
-                    </span>
+                      {data.authTitle || 'AUTORIZAÇÃO DE PAGAMENTO – CLIENTE'}
+                    </h2>
                   </div>
-                  <div style={{ marginBottom: '1px' }}>
+
+                  {/* Parágrafo principal - COMPLETAMENTE EDITÁVEL */}
+                  <div style={{ 
+                    border: '2px solid black', 
+                    padding: '15px', 
+                    marginBottom: '15px', 
+                    ...fontSizeAuthBody, 
+                    lineHeight: '1.5', 
+                    textAlign: 'left',
+                    backgroundColor: 'white'
+                  }}>
+                    <p 
+                      contentEditable 
+                      suppressContentEditableWarning
+                      onBlur={(e) => handleBlur('authParagraph', e.currentTarget.textContent || '')}
+                      className={editableClass}
+                      style={{ margin: 0, wordBreak: 'normal', whiteSpace: 'normal' }}
+                    >
+                      {data.authParagraph || `EU, ${data.clientName || '__________________________________________________'}, PORTADOR (A) DO CPF: ${data.clientCpf || '__________________'}, AUTORIZO A EMPRESA BELOGROUP INTERMEDIADORA DE SERVIÇOS LTDA – CNPJ: 27.246.092/0001-40 A UTILIZAR O CRÉDITO REFERENTE AO MEU CONTRATO N°. ${data.contractNumber || '__________'} PARA EFETUAR O PAGAMENTO PARA OS SEGUINTES BENEFICIÁRIOS:`}
+                    </p>
+                  </div>
+
+                  {/* Valor Total — entre o parágrafo e os beneficiários */}
+                  <div style={{ border: '1px solid black', padding: '6px 10px', marginBottom: '8px', ...fontSizeAuthBody }}>
                     <span 
                       contentEditable 
                       suppressContentEditableWarning
-                      onBlur={(e) => handleBlur('pixLabel', e.currentTarget.textContent || '')}
+                      onBlur={(e) => handleBlur('valorTotalLabel', e.currentTarget.textContent || '')}
                       className={editableClass}
-                      style={{ fontWeight: 'bold' }}
+                      style={{ fontWeight: 'bold', textTransform: 'uppercase' }}
                     >
-                      {data.pixLabel || 'PIX:'}
+                      {data.valorTotalLabel || 'Valor Total:'}
                     </span>
                     &nbsp;
-                    <span 
-                      contentEditable 
-                      suppressContentEditableWarning
-                      onBlur={(e) => handleBeneficiaryBlur(ben.id, 'pix', e.currentTarget.textContent || '')}
-                      className={editableClass}
-                    >
-                      {ben.pix || ''}
-                    </span>
+                    <span style={{ fontWeight: 'bold' }}>{displayAmount(data.totalAmount)}</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '1px' }}>
-                    <div>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBlur('docLabel', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                        style={{ fontWeight: 'bold' }}
-                      >
-                        {data.docLabel || 'CPF/CNPJ:'}
-                      </span>
-                      &nbsp;
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'document', e.currentTarget.textContent || '')} 
-                        className={editableClass}
-                      >
-                        {ben.document || ''}
-                      </span>
-                    </div>
-                    <div>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBlur('typeLabel', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                        style={{ fontWeight: 'bold' }}
-                      >
-                        {data.typeLabel || 'Tipo:'}
-                      </span>
-                      &nbsp;
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'type', e.currentTarget.textContent || '')} 
-                        className={editableClass}
-                      >
-                        {ben.type || ''}
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '1px' }}>
-                    <div>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBlur('bankLabel', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                        style={{ fontWeight: 'bold' }}
-                      >
-                        {data.bankLabel || 'Banco:'}
-                      </span>
-                      &nbsp;
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'bank', e.currentTarget.textContent || '')} 
-                        className={editableClass}
-                      >
-                        {ben.bank || ''}
-                      </span>
-                    </div>
-                    <div>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBlur('agencyLabel', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                        style={{ fontWeight: 'bold' }}
-                      >
-                        {data.agencyLabel || 'Agência:'}
-                      </span>
-                      &nbsp;
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'agency', e.currentTarget.textContent || '')} 
-                        className={editableClass}
-                      >
-                        {ben.agency || ''}
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                    <div>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBlur('accountLabel', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                        style={{ fontWeight: 'bold' }}
-                      >
-                        {data.accountLabel || 'Conta:'}
-                      </span>
-                      &nbsp;
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'account', e.currentTarget.textContent || '')} 
-                        className={editableClass}
-                      >
-                        {ben.account || ''}
-                      </span>
-                    </div>
-                    <div>
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBlur('amountLabel', e.currentTarget.textContent || '')}
-                        className={editableClass}
-                        style={{ fontWeight: 'bold' }}
-                      >
-                        {data.amountLabel || 'Valor:'}
-                      </span>
-                      &nbsp;
-                      <span 
-                        contentEditable 
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleBeneficiaryBlur(ben.id, 'amount', e.currentTarget.textContent || '')} 
-                        className={editableClass}
-                      >
-                        {ben.amount || ''}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                </>
+              )}
 
-            <div style={{ marginTop: 'auto', paddingTop: '10px', textAlign: 'right', fontSize: '8pt', fontStyle: 'italic', opacity: 0.8 }}>
-              Data de Emissão: {currentDate}
+              {pageIndex > 0 && (
+                <div style={{ textAlign: 'center', marginBottom: '15px', fontSize: '10pt', fontStyle: 'italic', color: '#666' }}>
+                  (Continuação - Beneficiários {pageIndex * 5 + 1} ao {Math.min((pageIndex + 1) * 5, data.beneficiaries.length)})
+                </div>
+              )}
+
+              <div style={{ ...fontSizeAuthBody, flex: 1 }}>
+                {pagebeneficiaries.map((ben, indexInPage) => {
+                  const globalIndex = pageIndex * 5 + indexInPage;
+                  return (
+                    <div key={ben.id} style={{ border: '1px solid black', padding: '6px 10px', marginBottom: '6px', backgroundColor: 'white' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', borderBottom: '1px dashed #ccc', paddingBottom: '2px', marginBottom: '2px' }}>
+                        <span 
+                          contentEditable 
+                          suppressContentEditableWarning
+                          onBlur={(e) => handleBlur('beneficiaryLabel', e.currentTarget.textContent || '')}
+                          className={editableClass}
+                          style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}
+                        >
+                          {data.beneficiaryLabel || `Beneficiário ${globalIndex + 1}:`}
+                        </span>
+                        <span 
+                          contentEditable 
+                          suppressContentEditableWarning
+                          onBlur={(e) => handleBeneficiaryBlur(ben.id, 'name', e.currentTarget.textContent || '')}
+                          className={editableClass}
+                          style={{ textTransform: 'uppercase', fontWeight: 'bold', marginLeft: '4px' }}
+                        >
+                          {ben.name || '_________________________'}
+                        </span>
+                      </div>
+                      <div style={{ marginBottom: '1px' }}>
+                        <span 
+                          contentEditable 
+                          suppressContentEditableWarning
+                          onBlur={(e) => handleBlur('pixLabel', e.currentTarget.textContent || '')}
+                          className={editableClass}
+                          style={{ fontWeight: 'bold' }}
+                        >
+                          {data.pixLabel || 'PIX:'}
+                        </span>
+                        &nbsp;
+                        <span 
+                          contentEditable 
+                          suppressContentEditableWarning
+                          onBlur={(e) => handleBeneficiaryBlur(ben.id, 'pix', e.currentTarget.textContent || '')}
+                          className={editableClass}
+                        >
+                          {ben.pix || ''}
+                        </span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '1px' }}>
+                        <div>
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBlur('docLabel', e.currentTarget.textContent || '')}
+                            className={editableClass}
+                            style={{ fontWeight: 'bold' }}
+                          >
+                            {data.docLabel || 'CPF/CNPJ:'}
+                          </span>
+                          &nbsp;
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBeneficiaryBlur(ben.id, 'document', e.currentTarget.textContent || '')} 
+                            className={editableClass}
+                          >
+                            {ben.document || ''}
+                          </span>
+                        </div>
+                        <div>
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBlur('typeLabel', e.currentTarget.textContent || '')}
+                            className={editableClass}
+                            style={{ fontWeight: 'bold' }}
+                          >
+                            {data.typeLabel || 'Tipo:'}
+                          </span>
+                          &nbsp;
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBeneficiaryBlur(ben.id, 'type', e.currentTarget.textContent || '')} 
+                            className={editableClass}
+                          >
+                            {ben.type || ''}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '1px' }}>
+                        <div>
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBlur('bankLabel', e.currentTarget.textContent || '')}
+                            className={editableClass}
+                            style={{ fontWeight: 'bold' }}
+                          >
+                            {data.bankLabel || 'Banco:'}
+                          </span>
+                          &nbsp;
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBeneficiaryBlur(ben.id, 'bank', e.currentTarget.textContent || '')} 
+                            className={editableClass}
+                          >
+                            {ben.bank || ''}
+                          </span>
+                        </div>
+                        <div>
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBlur('agencyLabel', e.currentTarget.textContent || '')}
+                            className={editableClass}
+                            style={{ fontWeight: 'bold' }}
+                          >
+                            {data.agencyLabel || 'Agência:'}
+                          </span>
+                          &nbsp;
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBeneficiaryBlur(ben.id, 'agency', e.currentTarget.textContent || '')} 
+                            className={editableClass}
+                          >
+                            {ben.agency || ''}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+                        <div>
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBlur('accountLabel', e.currentTarget.textContent || '')}
+                            className={editableClass}
+                            style={{ fontWeight: 'bold' }}
+                          >
+                            {data.accountLabel || 'Conta:'}
+                          </span>
+                          &nbsp;
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBeneficiaryBlur(ben.id, 'account', e.currentTarget.textContent || '')} 
+                            className={editableClass}
+                          >
+                            {ben.account || ''}
+                          </span>
+                        </div>
+                        <div>
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBlur('amountLabel', e.currentTarget.textContent || '')}
+                            className={editableClass}
+                            style={{ fontWeight: 'bold' }}
+                          >
+                            {data.amountLabel || 'Valor:'}
+                          </span>
+                          &nbsp;
+                          <span 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleBeneficiaryBlur(ben.id, 'amount', e.currentTarget.textContent || '')} 
+                            className={editableClass}
+                          >
+                            {ben.amount || ''}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ marginTop: 'auto', paddingTop: '10px', textAlign: 'right', fontSize: '8pt', fontStyle: 'italic', opacity: 0.8 }}>
+                Data de Emissão: {currentDate}
+              </div>
             </div>
-          </div>
+          ))}
         </>
       )}
 
-      {/* PÁGINA 3: QUITAÇÃO */}
+      {/* PÁGINA QUITAÇÃO */}
       {isQuitacaoMode && (
         <div
           id="quitacao-documento"
