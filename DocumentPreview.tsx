@@ -259,7 +259,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                     SIM ( {data.needsGuarantor === 'sim' ? 'X' : ' '} )
                   </span>
                   <span 
-                    onClick={() => onUpdate?.({ needsGuarantor === 'nao' })}
+                    onClick={() => onUpdate?.({ needsGuarantor: 'nao' })}
                     className="cursor-pointer hover:text-blue-600 transition-colors"
                     style={{ marginRight: '15px' }}
                   >
