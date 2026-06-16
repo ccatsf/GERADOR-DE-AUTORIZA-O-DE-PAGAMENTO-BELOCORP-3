@@ -10,6 +10,56 @@ export interface Beneficiary {
   amount: string;
 }
 
+export const createEmptyBeneficiary = (): Beneficiary => ({
+  id: Math.random().toString(36).substring(2, 9),
+  name: '',
+  pix: '',
+  document: '',
+  type: '',
+  bank: '',
+  agency: '',
+  account: '',
+  amount: '',
+});
+
+export const normalizePaymentAuthData = (raw?: Partial<PaymentAuthData> | null): PaymentAuthData => {
+  const defaults: PaymentAuthData = {
+    clientName: '',
+    clientCpf: '',
+    contractNumber: '',
+    totalAmount: '',
+    isContractAdditive: '',
+    needsGuarantor: '',
+    doctorName: '',
+    paymentAmount: '',
+    beneficiaries: [createEmptyBeneficiary()],
+  };
+
+  if (!raw || typeof raw !== 'object') {
+    return defaults;
+  }
+
+  const beneficiaries = Array.isArray(raw.beneficiaries) && raw.beneficiaries.length > 0
+    ? raw.beneficiaries.map((beneficiary, index) => ({
+        id: beneficiary?.id || String(index + 1),
+        name: beneficiary?.name || '',
+        pix: beneficiary?.pix || '',
+        document: beneficiary?.document || '',
+        type: beneficiary?.type || '',
+        bank: beneficiary?.bank || '',
+        agency: beneficiary?.agency || '',
+        account: beneficiary?.account || '',
+        amount: beneficiary?.amount || '',
+      }))
+    : defaults.beneficiaries;
+
+  return {
+    ...defaults,
+    ...raw,
+    beneficiaries,
+  };
+};
+
 export interface PaymentAuthData {
   clientName: string;
   clientCpf: string;
