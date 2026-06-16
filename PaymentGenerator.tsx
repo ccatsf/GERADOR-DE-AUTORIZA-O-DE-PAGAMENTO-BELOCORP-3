@@ -58,18 +58,22 @@ const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({ user, onBack }) => 
   }, [user]);
 
   useEffect(() => {
-    const beneficiaries = data?.beneficiaries ?? [];
+    if (!data) return;
+    const beneficiaries = data.beneficiaries ?? [];
     const total = beneficiaries.reduce((acc, b) => acc + parseCurrency(b.amount), 0);
     const formattedTotal = maskCurrency(Math.round(total * 100).toString());
     
     if (formattedTotal !== data.totalAmount) {
-      setData(prev => normalizePaymentAuthData({
-        ...prev,
-        totalAmount: formattedTotal,
-        paymentAmount: formattedTotal
-      }));
+      setData(prev => {
+        if (!prev) return normalizePaymentAuthData();
+        return normalizePaymentAuthData({
+          ...prev,
+          totalAmount: formattedTotal,
+          paymentAmount: formattedTotal
+        });
+      });
     }
-  }, [data?.beneficiaries, data.totalAmount]);
+  }, [data?.beneficiaries]);
 
   const handleUpdateData = (newData: Partial<PaymentAuthData>) => {
     setData(prev => normalizePaymentAuthData({ ...prev, ...newData }));
