@@ -49,7 +49,8 @@ export const parsePaymentText = async (rawText: string): Promise<Partial<Payment
 
   try {
     const text = response.text || "{}";
-    return JSON.parse(text.trim());
+    const parsed = JSON.parse(text.trim());
+    return parsed && typeof parsed === 'object' ? parsed : {};
   } catch (e) {
     console.error("Falha ao analisar JSON da IA", e);
     return {};
