@@ -367,6 +367,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
           </div>
 
           {/* PÁGINAS DE AUTORIZAÇÃO - UMA POR PÁGINA (MAX 5 BENEFICIÁRIOS POR PÁGINA) */}
+          <div id="autorizacao-documento" className="flex flex-col items-center space-y-12 w-full">
           {beneficiaryPages.map((pagebeneficiaries, pageIndex) => (
             <div
               key={pageIndex}
@@ -623,6 +624,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
               </div>
             </div>
           ))}
+          </div>
         </>
       )}
 
