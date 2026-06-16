@@ -21,6 +21,7 @@ const PaymentForm: React.FC<Props> = ({
   onRemoveBeneficiary,
   onUpdateBeneficiary,
 }) => {
+  const beneficiaries = data?.beneficiaries ?? [];
   const [directory, setDirectory] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState<string | null>(null);
 
@@ -174,13 +175,13 @@ const PaymentForm: React.FC<Props> = ({
         </div>
 
         <div className="space-y-8">
-          {data.beneficiaries.map((b, index) => (
+          {beneficiaries.map((b, index) => (
             <div key={b.id} className="relative p-6 bg-gray-50 dark:bg-zinc-900/50 rounded-xl border border-gray-100 dark:border-zinc-700 group">
               <div className="flex justify-between items-center mb-4">
                 <span className="bg-indigo-600 dark:bg-indigo-700 text-white px-3 py-1 rounded-full text-xs font-bold">
                   Beneficiário {index + 1}
                 </span>
-                {data.beneficiaries.length > 1 && (
+                {beneficiaries.length > 1 && (
                   <button
                     onClick={() => onRemoveBeneficiary(b.id)}
                     className="text-red-400 hover:text-red-600 transition"
