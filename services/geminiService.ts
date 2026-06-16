@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { PaymentAuthData } from "../types";
 
 export const parsePaymentText = async (rawText: string): Promise<Partial<PaymentAuthData>> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : '');
   if (!apiKey) {
     throw new Error("API Key não configurada. Verifique as variáveis de ambiente.");
   }
@@ -58,7 +58,7 @@ export const parsePaymentText = async (rawText: string): Promise<Partial<Payment
 };
 
 export const generateDailyQuote = async (): Promise<string> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : '');
   if (!apiKey) return "Foco, força e fé para conquistar seus objetivos hoje!";
 
   const ai = new GoogleGenAI({ apiKey });
