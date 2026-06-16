@@ -1,6 +1,5 @@
-
 import React, { forwardRef } from 'react';
-import { PaymentAuthData } from '../types';
+import { PaymentAuthData, Beneficiary } from './types';
 
 interface Props {
   data: PaymentAuthData;
@@ -82,7 +81,8 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
     return pages;
   };
 
-  const beneficiaryPages = groupBeneficiariesByPage(data.beneficiaries);
+  const beneficiaries = data?.beneficiaries ?? [];
+  const beneficiaryPages = groupBeneficiariesByPage(beneficiaries);
 
   return (
     <div className="a4-preview-wrapper flex flex-col items-center space-y-12 pb-20">
@@ -439,7 +439,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
 
               {pageIndex > 0 && (
                 <div style={{ textAlign: 'center', marginBottom: '15px', fontSize: '10pt', fontStyle: 'italic', color: '#666' }}>
-                  (Continuação - Beneficiários {pageIndex * 5 + 1} ao {Math.min((pageIndex + 1) * 5, data.beneficiaries.length)})
+                  (Continuação - Beneficiários {pageIndex * 5 + 1} ao {Math.min((pageIndex + 1) * 5, beneficiaries.length)})
                 </div>
               )}
 
@@ -796,7 +796,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                   </span>
                   &nbsp;
                   <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>
-                    {data.beneficiaries[0]?.name || '________________________________'}
+                    {beneficiaries[0]?.name || '________________________________'}
                   </span>
                 </p>
                 <p>
@@ -811,7 +811,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                   </span>
                   &nbsp;
                   <span style={{ fontWeight: 'bold' }}>
-                    {data.beneficiaries[0]?.document || '__________________'}
+                    {beneficiaries[0]?.document || '__________________'}
                   </span>
                 </p>
                 
@@ -828,7 +828,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                     </span>
                     &nbsp;
                     <span style={{ fontWeight: 'bold' }}>
-                      {data.beneficiaries[0]?.bank || '________________'}
+                      {beneficiaries[0]?.bank || '________________'}
                     </span>
                   </p>
                   <p>
@@ -843,7 +843,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                     </span>
                     &nbsp;
                     <span style={{ fontWeight: 'bold' }}>
-                      {data.beneficiaries[0]?.agency || '________________'}
+                      {beneficiaries[0]?.agency || '________________'}
                     </span>
                   </p>
                 </div>
@@ -861,7 +861,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                     </span>
                     &nbsp;
                     <span style={{ fontWeight: 'bold' }}>
-                      {data.beneficiaries[0]?.account || '________________'}
+                      {beneficiaries[0]?.account || '________________'}
                     </span>
                   </p>
                   <p>
@@ -876,7 +876,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                     </span>
                     &nbsp;
                     <span style={{ fontWeight: 'bold' }}>
-                      {data.beneficiaries[0]?.type || '________________'}
+                      {beneficiaries[0]?.type || '________________'}
                     </span>
                   </p>
                 </div>
@@ -893,7 +893,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                   </span>
                   &nbsp;
                   <span style={{ fontWeight: 'bold' }}>
-                    {data.beneficiaries[0]?.pix || '________________________________'}
+                    {beneficiaries[0]?.pix || '________________________________'}
                   </span>
                 </p>
               </div>
