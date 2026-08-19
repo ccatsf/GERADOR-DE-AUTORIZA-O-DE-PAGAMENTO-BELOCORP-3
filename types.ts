@@ -8,6 +8,7 @@ export interface Beneficiary {
   agency: string;
   account: string;
   amount: string;
+  observation?: string;
 }
 
 export const createEmptyBeneficiary = (): Beneficiary => ({
@@ -20,6 +21,7 @@ export const createEmptyBeneficiary = (): Beneficiary => ({
   agency: '',
   account: '',
   amount: '',
+  observation: '',
 });
 
 export const normalizePaymentAuthData = (raw?: Partial<PaymentAuthData> | null): PaymentAuthData => {
@@ -50,6 +52,7 @@ export const normalizePaymentAuthData = (raw?: Partial<PaymentAuthData> | null):
         agency: beneficiary?.agency || '',
         account: beneficiary?.account || '',
         amount: beneficiary?.amount || '',
+        observation: beneficiary?.observation || '',
       }))
     : defaults.beneficiaries;
 
