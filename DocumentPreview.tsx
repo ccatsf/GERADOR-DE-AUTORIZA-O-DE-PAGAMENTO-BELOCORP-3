@@ -71,6 +71,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
   const fontSizeAuthHeader = { fontSize: '12pt' };
 
   const editableClass = "hover:bg-blue-50 focus:bg-blue-100 outline-none transition-colors cursor-text rounded";
+  const editableData = data as PaymentAuthData & { capaLabelPagamento?: string; paymentForecast?: string };
 
   // Função para agrupar beneficiários em páginas (5 por página)
   const groupBeneficiariesByPage = (beneficiaries: Beneficiary[], perPage: number = 5) => {
@@ -251,38 +252,25 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                     </span>
                   </span>
                 <div style={{ display: 'flex', alignItems: 'center', margin: '12px 0' }}>
-  <span 
-    contentEditable 
-    suppressContentEditableWarning
-    onBlur={(e) => handleBlur('capaLabelPagamento', e.currentTarget.textContent || '')}
-    className={editableClass}
-    style={{ marginRight: '12px' }}
-  >
-    {data.capaLabelPagamento || 'Previsão de pagamento:'}
-  </span>
-
-  <span 
-    contentEditable 
-    suppressContentEditableWarning
-    onBlur={(e) => handleBlur('paymentForecast', e.currentTarget.textContent || '')}
-    className={editableClass}
-    style={{ fontWeight: 'bold', minWidth: '100px', display: 'inline-block' }}
-  >
-    {data.paymentForecast || '__/__/____'}
-  </span>
-</div>
-
-<div style={{ display: 'flex', alignItems: 'center', margin: '12px 0' }}>
-  <span 
-    contentEditable 
-    suppressContentEditableWarning
-    onBlur={(e) => handleBlur('capaLabel6', e.currentTarget.textContent || '')}
-    className={editableClass}
-    style={{ marginRight: '12px' }}
-  >
-    {data.capaLabel6 || 'Necessidade de avalista?'}
-  </span>
-                
+                  <span
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleBlur('capaLabelPagamento' as keyof PaymentAuthData, e.currentTarget.textContent || '')}
+                    className={editableClass}
+                    style={{ marginRight: '12px' }}
+                  >
+                    {editableData.capaLabelPagamento || 'Previsão de pagamento:'}
+                  </span>
+                  <span
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleBlur('paymentForecast' as keyof PaymentAuthData, e.currentTarget.textContent || '')}
+                    className={editableClass}
+                    style={{ fontWeight: 'bold', minWidth: '100px', display: 'inline-block' }}
+                  >
+                    {editableData.paymentForecast || '__/__/____'}
+                  </span>
+                </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', margin: '12px 0' }}>
                   <span 
