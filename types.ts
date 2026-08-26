@@ -34,6 +34,7 @@ export const normalizePaymentAuthData = (raw?: Partial<PaymentAuthData> | null):
     needsGuarantor: '',
     doctorName: '',
     paymentAmount: '',
+    expectedPaymentDate: '',
     beneficiaries: [createEmptyBeneficiary()],
   };
 
@@ -73,6 +74,7 @@ export interface PaymentAuthData {
   needsGuarantor: 'sim' | 'nao' | '';
   doctorName: string;
   paymentAmount: string; // Valor específico que aparece na capa como "Valor a pagar"
+  expectedPaymentDate?: string; // Data de pagamento prevista (ex.: '2026-08-26')
   quitacaoDate?: string; // Novo campo para Quitação
   beneficiaries: Beneficiary[];
   
@@ -86,6 +88,7 @@ export interface PaymentAuthData {
   capaLabel5?: string; // "Valor a pagar:"
   capaLabel6?: string; // "Necessidade de avalista?"
   capaLabel7?: string; // "Médico (a):"
+  capaLabel8?: string; // "Data de pagamento prevista:"
   checklistAdminTitle?: string; // "CHECKLIST ADMINISTRATIVO:"
   checklistFinanceiroTitle?: string; // "CHECKLIST FINANCEIRO:"
   
