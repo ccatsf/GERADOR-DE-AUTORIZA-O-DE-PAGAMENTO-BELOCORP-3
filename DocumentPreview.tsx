@@ -250,7 +250,39 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, isQuitacaoMod
                       {displayAmount(data.paymentAmount || data.totalAmount)}
                     </span>
                   </span>
-                </div>
+                <div style={{ display: 'flex', alignItems: 'center', margin: '12px 0' }}>
+  <span 
+    contentEditable 
+    suppressContentEditableWarning
+    onBlur={(e) => handleBlur('capaLabelPagamento', e.currentTarget.textContent || '')}
+    className={editableClass}
+    style={{ marginRight: '12px' }}
+  >
+    {data.capaLabelPagamento || 'Previsão de pagamento:'}
+  </span>
+
+  <span 
+    contentEditable 
+    suppressContentEditableWarning
+    onBlur={(e) => handleBlur('paymentForecast', e.currentTarget.textContent || '')}
+    className={editableClass}
+    style={{ fontWeight: 'bold', minWidth: '100px', display: 'inline-block' }}
+  >
+    {data.paymentForecast || '__/__/____'}
+  </span>
+</div>
+
+<div style={{ display: 'flex', alignItems: 'center', margin: '12px 0' }}>
+  <span 
+    contentEditable 
+    suppressContentEditableWarning
+    onBlur={(e) => handleBlur('capaLabel6', e.currentTarget.textContent || '')}
+    className={editableClass}
+    style={{ marginRight: '12px' }}
+  >
+    {data.capaLabel6 || 'Necessidade de avalista?'}
+  </span>
+                
 
                 <div style={{ display: 'flex', alignItems: 'center', margin: '12px 0' }}>
                   <span 
